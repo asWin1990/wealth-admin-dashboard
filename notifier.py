@@ -44,7 +44,7 @@ def build_html_email(snapshot, dashboard_url):
               <td style="padding:7px 8px;text-align:right;">{fmt_pct(x.get('1D'))}</td>
               <td style="padding:7px 8px;text-align:right;">{fmt_pct(x.get('1M'))}</td>
               <td style="padding:7px 8px;text-align:right;">{fmt_pct(x.get('1Y'))}</td>
-              <td style="padding:7px 8px;font-size:12px;color:#374151;">{x.get('signal', 'Neutral')}</td>
+              <td style="padding:7px 8px;font-size:12px;color:#374151;">{x.get('bi_stance', 'Neutral')}</td>
             </tr>
             """
 
