@@ -35,7 +35,7 @@ def run_ai_analysis():
                 "sharpe": x["sharpe_1y"],
                 "pe": x["pe"],
                 "stance": x.get("stance", "Neutral"),
-                "signal": x["signal"],
+                "bi_stance": x.get("bi_stance", "Neutral"),
             }
             for x in items
         ]
