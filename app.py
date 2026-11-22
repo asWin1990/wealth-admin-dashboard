@@ -337,7 +337,7 @@ with tab2:
             st.plotly_chart(fig, use_container_width=True)
 
 with tab3:
-    st.markdown("#### Top 10 Verified Financial News (40% India / 60% Global)")
+    st.markdown("#### Top 10 Verified Financial News")
     filter_reg = st.radio("Filter Region", ["ALL", "INDIA", "GLOBAL"], horizontal=True)
     news_list = snapshot.get("verified_news", [])
     if not news_list:
