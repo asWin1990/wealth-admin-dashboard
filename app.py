@@ -231,4 +231,4 @@ with tab1:
     st.markdown("#### Indian Broad Equity & MF Category Benchmarks")
     render_heatmap(markets.get("indian_equity", []))
     st.markdown("#### Indian Sectoral Benchmarks")
-    render_heatmap(markets
+    render_heatmap(markets.get("macro_commodities_fx", []))
