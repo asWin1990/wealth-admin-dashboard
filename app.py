@@ -121,4 +121,245 @@ with st.sidebar:
     if snapshot:
         printable_html = build_html_email(snapshot, "https://share.streamlit.io")
         st.download_button(
-            label="
+            label="📄 Export Printable Brief (HTML)",
+            data=printable_html,
+            file_name="AURA_BI_Daily_Brief.html",
+            mime="text/html",
+            use_container_width=True,
+        )
+        st.caption("Open downloaded file in browser & press Ctrl+P for a crisp white-paper PDF.")
+
+    st.divider()
+    st.caption("Auto-Schedule: 8:30 AM & 4:30 PM IST (Mon–Fri)")
+
+if not snapshot:
+    st.warning("No snapshot found yet. Click **🔄 Refresh Live Data & AI** in the sidebar.")
+    st.stop()
+
+ai = snapshot.get("ai_strategist", {})
+macro = snapshot.get("macro_manual", {})
+markets = snapshot.get("markets", {})
+
+
+def format_price(item):
+    if not item or item.get("price") is None:
+        return "—"
+    cur = item.get("currency", "")
+    val = item["price"]
+    if cur == "%":
+        return f"{val:.2f}%"
+    if cur in ["₹", "$"]:
+        return f"{cur}{val:,.2f}"
+    return f"{val:,.2f}"
+
+
+# --- HEADER ---
+col_h1, col_h2 = st.columns([4, 1])
+with col_h1:
+    regime = ai.get("market_regime", "Awaiting AI Sync")
+    st.markdown(
+        f"""
+        <div class="brand-title">AURA BI AGENT</div>
+        <div class="brand-sub">
+            Updated: <strong>{snapshot.get('updated_at_ist', 'N/A')}</strong>
+            <span class="regime-pill">REGIME: {regime.upper()}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+with col_h2:
+    with st.popover("ℹ️ BI Methodology"):
+        st.markdown("""
+        * **BI Stance:** Algorithmic score combining **P/E multiples** (via ETF proxies), **200-DMA trend**, **1M/3M momentum**, and **1Y Sharpe**.
+        * **RSI (14):** `< 35` = Oversold / Entry zone; `> 70` = Overbought / Caution.
+        * **vs 52W High:** `%` pullback from 52-week peak.
+        """)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# --- TOP KPI PULSE STRIP ---
+def find_item(cat, keyword):
+    for x in markets.get(cat, []):
+        if keyword.lower() in x["name"].lower():
+            return x
+    return None
+
+kpis = [
+    ("Nifty 50", find_item("indian_equity", "Nifty 50")),
+    ("India VIX", find_item("indian_equity", "VIX")),
+    ("S&P 500", find_item("global_indices", "S&P 500")),
+    ("Gold (INR / 10g)", find_item("macro_commodities_fx", "Gold (INR")),
+    ("USD / INR", find_item("macro_commodities_fx", "USD / INR")),
+]
+
+kpi_cols = st.columns(6)
+for idx, (label, item) in enumerate(kpis):
+    with kpi_cols[idx]:
+        if item:
+            d1 = item.get("1D") or 0
+            cls = "kpi-pos" if d1 >= 0 else "kpi-neg"
+            sign = "+" if d1 > 0 else ""
+            st.markdown(
+                f"""
+                <div class="kpi-card">
+                  <div class="kpi-label">{label}</div>
+                  <div class="kpi-val">{format_price(item)}</div>
+                  <div class="{cls}">{sign}{d1:.2f}% (1D)</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+with kpi_cols[5]:
+    repo = macro.get("rbi_repo_rate", 6.50)
+    gsec = macro.get("india_10y_gsec_approx", 6.85)
+    spread = round(gsec - repo, 2)
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+          <div class="kpi-label">RBI Repo / 10Y G-Sec</div>
+          <div class="kpi-val">{repo:.2f}% / {gsec:.2f}%</div>
+          <div class="kpi-pos">Spread: +{spread:.2f}%</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# --- AI AGENT BRIEF ---
+if ai:
+    c1, c2 = st.columns(2)
+    with c1:
+        opp_md = "<br>".join(f"• {x}" for x in ai.get("opportunities", []))
+        st.markdown(f'<div class="ai-box"><strong>🎯 BI Opportunities (Value + Momentum)</strong><br><br>{opp_md}</div>', unsafe_allow_html=True)
+    with c2:
+        risk_md = "<br>".join(f"• {x}" for x in ai.get("risk_flags", []))
+        st.markdown(f'<div class="ai-box"><strong>⚠️ Risk & Overextension Alerts</strong><br><br>{risk_md}</div>', unsafe_allow_html=True)
+    st.info(f"**🏦 Debt Duration & Macro Call:** {ai.get('debt_and_macro', 'N/A')}")
+
+
+# --- HEATMAP RENDERER ---
+def render_heatmap(items, show_valuation=True):
+    if not items:
+        st.info("No data available. Click **🔄 Refresh Live Data & AI** in the sidebar.")
+        return
+
+    rows = []
+    for x in items:
+        row = {
+            "Benchmark": x["name"],
+            "Price": format_price(x),
+            "1D": x.get("1D"),
+            "1W": x.get("1W"),
+            "1M": x.get("1M"),
+            "3M": x.get("3M"),
+            "1Y": x.get("1Y"),
+            "3Y CAGR": x.get("3Y_CAGR"),
+            "5Y CAGR": x.get("5Y_CAGR"),
+            "Vol %": x.get("volatility_1y"),
+            "Sharpe": x.get("sharpe_1y"),
+            "RSI": x.get("rsi_14"),
+            "vs 52W High": x.get("from_52w_high"),
+            "vs 200-DMA": x.get("dist_200dma"),
+        }
+        if show_valuation:
+            row["P/E"] = x.get("pe")
+        row["BI Stance"] = x.get("bi_stance", "Neutral")
+        rows.append(row)
+
+    df = pd.DataFrame(rows)
+    ret_cols = ["1D", "1W", "1M", "3M", "1Y", "3Y CAGR", "5Y CAGR", "vs 52W High", "vs 200-DMA"]
+
+    def color_cells(val):
+        if pd.isna(val):
+            return ""
+        if val >= 10:
+            return "background-color: rgba(16, 185, 129, 0.28); color: #A7F3D0; font-weight: 600;"
+        if val > 0:
+            return "background-color: rgba(16, 185, 129, 0.12); color: #D1FAE5;"
+        if val <= -10:
+            return "background-color: rgba(239, 68, 68, 0.28); color: #FECACA; font-weight: 600;"
+        if val < 0:
+            return "background-color: rgba(239, 68, 68, 0.12); color: #FEE2E2;"
+        return ""
+
+    fmt_map = {c: "{:+.2f}%" for c in ret_cols} | {
+        "Vol %": "{:.1f}%",
+        "Sharpe": "{:.2f}",
+        "RSI": "{:.1f}",
+    }
+    if show_valuation:
+        fmt_map["P/E"] = "{:.1f}"
+
+    styled = df.style.map(color_cells, subset=ret_cols).format(fmt_map, na_rep="—")
+    st.dataframe(styled, use_container_width=True, hide_index=True)
+
+
+# --- MAIN TABS ---
+tab1, tab2, tab3, tab4 = st.tabs([
+    "📊 Equity & Valuation Heatmaps",
+    "🧭 Sector Rotation Radar",
+    "📰 Top 10 Verified News",
+    "🌍 Macro, FX & Commodities",
+])
+
+with tab1:
+    st.markdown("#### Indian Broad Equity & MF Category Benchmarks")
+    render_heatmap(markets.get("indian_equity", []), show_valuation=True)
+    st.markdown("#### Indian Sectoral Benchmarks")
+    render_heatmap(markets.get("indian_sectors", []), show_valuation=True)
+    st.markdown("#### Global Markets (Indian International FoF Exposure)")
+    render_heatmap(markets.get("global_indices", []), show_valuation=True)
+
+with tab2:
+    st.markdown("#### Sector Trend vs. Momentum Quadrant")
+    sectors = markets.get("indian_sectors", [])
+    if sectors:
+        sdf = pd.DataFrame(sectors).dropna(subset=["dist_200dma", "3M"])
+        if not sdf.empty:
+            fig = px.scatter(
+                sdf,
+                x="dist_200dma",
+                y="3M",
+                text="name",
+                color="bi_stance",
+                size=sdf["volatility_1y"].fillna(15),
+                labels={"dist_200dma": "Distance from 200-DMA (%)", "3M": "3-Month Return (%)"},
+                template="plotly_dark",
+                height=500,
+            )
+            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
+            fig.add_vline(x=0, line_dash="dash", line_color="#64748B")
+            fig.add_hline(y=0, line_dash="dash", line_color="#64748B")
+            fig.update_traces(textposition="top center")
+            st.plotly_chart(fig, use_container_width=True)
+
+with tab3:
+    st.markdown("#### Top 10 Verified Financial News")
+    filter_reg = st.radio("Filter Region", ["ALL", "INDIA", "GLOBAL"], horizontal=True)
+    news_list = snapshot.get("verified_news", [])
+    if not news_list:
+        st.info("Click **🔄 Refresh Live Data & AI** in the sidebar to populate today's AI-verified news wire.")
+    for n in news_list:
+        if filter_reg != "ALL" and n.get("region", "").upper() != filter_reg:
+            continue
+        st.markdown(
+            f"""
+            <div class="news-card">
+              <span class="badge">{n.get('region', '')}</span>
+              <span class="badge">{n.get('tag', '')}</span>
+              <a href="{n.get('link', '#')}" target="_blank" style="color:#F8FAFC;font-weight:600;text-decoration:none;font-size:15px;">
+                {n.get('title', '')}
+              </a>
+              <div style="font-size:13px;color:#94A3B8;margin-top:6px;">
+                {n.get('impact', '')} <em>— {n.get('source', '')}</em>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+with tab4:
+    st.markdown("#### Gold (INR & USD), Commodities, FX & Global Yields")
+    render_heatmap(markets.get("macro_commodities_fx", []), show_valuation=False)
