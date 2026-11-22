@@ -1,5 +1,5 @@
 {
-  "updated_at_ist": "23 Nov 2026, 02:28 AM IST",
+  "updated_at_ist": "23 Nov 2026, 02:37 AM IST",
   "macro_manual": {
     "rbi_repo_rate": 6.5,
     "india_10y_gsec_approx": 6.85,
@@ -21,11 +21,10 @@
         "5Y_CAGR": 8.18,
         "volatility_1y": 14.32,
         "sharpe_1y": -0.5,
-        "max_drawdown_1y": -15.56,
         "dist_200dma": 7.51,
-        "pe": null,
+        "pe": 22.32,
         "pb": null,
-        "bi_stance": "Hold / Neutral"
+        "bi_stance": "Accumulate"
       },
       {
         "name": "Nifty Next 50",
@@ -41,11 +40,10 @@
         "5Y_CAGR": 11.33,
         "volatility_1y": 17.83,
         "sharpe_1y": -0.11,
-        "max_drawdown_1y": -14.63,
         "dist_200dma": 4.23,
-        "pe": null,
+        "pe": 18.42,
         "pb": null,
-        "bi_stance": "Hold / Neutral"
+        "bi_stance": "Accumulate"
       },
       {
         "name": "Nifty Midcap 150",
@@ -61,7 +59,6 @@
         "5Y_CAGR": null,
         "volatility_1y": 17.26,
         "sharpe_1y": null,
-        "max_drawdown_1y": -7.05,
         "dist_200dma": null,
         "pe": 27.06,
         "pb": null,
@@ -81,7 +78,6 @@
         "5Y_CAGR": null,
         "volatility_1y": 18.5,
         "sharpe_1y": -0.12,
-        "max_drawdown_1y": -17.17,
         "dist_200dma": 4.1,
         "pe": 25.24,
         "pb": null,
@@ -101,9 +97,8 @@
         "5Y_CAGR": 9.97,
         "volatility_1y": 14.81,
         "sharpe_1y": -0.34,
-        "max_drawdown_1y": -14.82,
         "dist_200dma": 5.67,
-        "pe": null,
+        "pe": 22.73,
         "pb": null,
         "bi_stance": "Hold / Neutral"
       },
@@ -121,7 +116,6 @@
         "5Y_CAGR": -0.23,
         "volatility_1y": 100.17,
         "sharpe_1y": 0.32,
-        "max_drawdown_1y": -62.89,
         "dist_200dma": 13.06,
         "pe": null,
         "pb": null,
@@ -143,7 +137,6 @@
         "5Y_CAGR": 16.47,
         "volatility_1y": 14.57,
         "sharpe_1y": 1.38,
-        "max_drawdown_1y": -7.46,
         "dist_200dma": 14.09,
         "pe": null,
         "pb": null,
@@ -163,11 +156,10 @@
         "5Y_CAGR": 13.81,
         "volatility_1y": 15.73,
         "sharpe_1y": -0.3,
-        "max_drawdown_1y": -12.96,
         "dist_200dma": 5.09,
-        "pe": null,
+        "pe": 24.06,
         "pb": null,
-        "bi_stance": "Accumulate"
+        "bi_stance": "Strong Buy"
       },
       {
         "name": "Nifty Bank",
@@ -183,11 +175,10 @@
         "5Y_CAGR": 11.73,
         "volatility_1y": 17.95,
         "sharpe_1y": 0.23,
-        "max_drawdown_1y": -18.32,
         "dist_200dma": 13.89,
-        "pe": null,
+        "pe": 15.05,
         "pb": null,
-        "bi_stance": "Hold / Neutral"
+        "bi_stance": "Strong Buy"
       },
       {
         "name": "Nifty PSU Bank",
@@ -203,11 +194,10 @@
         "5Y_CAGR": 29.77,
         "volatility_1y": 24.37,
         "sharpe_1y": 0.5,
-        "max_drawdown_1y": -20.31,
         "dist_200dma": 15.23,
-        "pe": null,
+        "pe": 8.68,
         "pb": null,
-        "bi_stance": "Hold / Neutral"
+        "bi_stance": "Strong Buy"
       },
       {
         "name": "Nifty IT",
@@ -223,9 +213,8 @@
         "5Y_CAGR": -2.46,
         "volatility_1y": 26.41,
         "sharpe_1y": -0.83,
-        "max_drawdown_1y": -34.74,
         "dist_200dma": 3.63,
-        "pe": null,
+        "pe": 19.3,
         "pb": null,
         "bi_stance": "Hold / Neutral"
       },
@@ -243,9 +232,8 @@
         "5Y_CAGR": 20.4,
         "volatility_1y": 22.32,
         "sharpe_1y": -0.03,
-        "max_drawdown_1y": -17.82,
         "dist_200dma": 7.22,
-        "pe": null,
+        "pe": 29.84,
         "pb": null,
         "bi_stance": "Hold / Neutral"
       },
@@ -263,7 +251,6 @@
         "5Y_CAGR": 4.82,
         "volatility_1y": 16.22,
         "sharpe_1y": -1.19,
-        "max_drawdown_1y": -23.34,
         "dist_200dma": 0.49,
         "pe": null,
         "pb": null,
@@ -283,11 +270,10 @@
         "5Y_CAGR": 17.75,
         "volatility_1y": 23.25,
         "sharpe_1y": 0.4,
-        "max_drawdown_1y": -16.33,
         "dist_200dma": -2.31,
-        "pe": null,
+        "pe": 15.7,
         "pb": null,
-        "bi_stance": "Hold / Neutral"
+        "bi_stance": "Strong Buy"
       },
       {
         "name": "Nifty Energy",
@@ -303,11 +289,10 @@
         "5Y_CAGR": 10.05,
         "volatility_1y": 16.71,
         "sharpe_1y": -0.2,
-        "max_drawdown_1y": -16.89,
         "dist_200dma": -1.56,
-        "pe": null,
+        "pe": 10.87,
         "pb": null,
-        "bi_stance": "Accumulate"
+        "bi_stance": "Strong Buy"
       },
       {
         "name": "Nifty Realty",
@@ -323,7 +308,6 @@
         "5Y_CAGR": 13.2,
         "volatility_1y": 27.71,
         "sharpe_1y": -0.26,
-        "max_drawdown_1y": -31.12,
         "dist_200dma": 13.81,
         "pe": null,
         "pb": null,
@@ -345,11 +329,10 @@
         "5Y_CAGR": 8.09,
         "volatility_1y": 14.31,
         "sharpe_1y": -0.19,
-        "max_drawdown_1y": -11.62,
         "dist_200dma": -5.96,
-        "pe": null,
-        "pb": null,
-        "bi_stance": "Cautious / Trim"
+        "pe": 21.95,
+        "pb": 1.61,
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "Nasdaq 100 (US Tech)",
@@ -365,10 +348,9 @@
         "5Y_CAGR": 8.85,
         "volatility_1y": 22.2,
         "sharpe_1y": -0.24,
-        "max_drawdown_1y": -19.84,
         "dist_200dma": -10.84,
-        "pe": null,
-        "pb": null,
+        "pe": 25.06,
+        "pb": 1.7,
         "bi_stance": "Cautious / Trim"
       },
       {
@@ -385,11 +367,10 @@
         "5Y_CAGR": -2.12,
         "volatility_1y": 18.89,
         "sharpe_1y": -1.25,
-        "max_drawdown_1y": -19.87,
         "dist_200dma": -10.8,
-        "pe": null,
-        "pb": null,
-        "bi_stance": "Avoid / Overheated"
+        "pe": 12.7,
+        "pb": 0.85,
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "Nikkei 225 (Japan)",
@@ -405,11 +386,10 @@
         "5Y_CAGR": 13.64,
         "volatility_1y": 29.99,
         "sharpe_1y": 0.14,
-        "max_drawdown_1y": -22.01,
         "dist_200dma": -9.36,
-        "pe": null,
-        "pb": null,
-        "bi_stance": "Cautious / Trim"
+        "pe": 13.59,
+        "pb": 1.23,
+        "bi_stance": "Accumulate"
       },
       {
         "name": "MSCI Emerging Markets",
@@ -425,10 +405,9 @@
         "5Y_CAGR": 3.69,
         "volatility_1y": 27.25,
         "sharpe_1y": -0.18,
-        "max_drawdown_1y": -24.39,
         "dist_200dma": -15.58,
         "pe": 12.64,
-        "pb": null,
+        "pb": 1.02,
         "bi_stance": "Hold / Neutral"
       },
       {
@@ -445,11 +424,10 @@
         "5Y_CAGR": 9.01,
         "volatility_1y": 16.44,
         "sharpe_1y": 0.04,
-        "max_drawdown_1y": -12.27,
         "dist_200dma": -0.78,
-        "pe": null,
-        "pb": null,
-        "bi_stance": "Cautious / Trim"
+        "pe": 16.37,
+        "pb": 1.22,
+        "bi_stance": "Accumulate"
       }
     ],
     "macro_commodities_fx": [
@@ -467,11 +445,10 @@
         "5Y_CAGR": 19.4,
         "volatility_1y": 28.96,
         "sharpe_1y": -0.71,
-        "max_drawdown_1y": -33.46,
         "dist_200dma": -22.1,
         "pe": null,
         "pb": null,
-        "bi_stance": "Avoid / Overheated"
+        "bi_stance": "Avoid / Weak"
       },
       {
         "name": "Gold (USD/oz)",
@@ -487,11 +464,10 @@
         "5Y_CAGR": 14.24,
         "volatility_1y": 28.59,
         "sharpe_1y": -0.72,
-        "max_drawdown_1y": -33.9,
         "dist_200dma": -20.91,
         "pe": null,
         "pb": null,
-        "bi_stance": "Avoid / Overheated"
+        "bi_stance": "Avoid / Weak"
       },
       {
         "name": "Silver (USD/oz)",
@@ -507,11 +483,10 @@
         "5Y_CAGR": 11.07,
         "volatility_1y": 66.49,
         "sharpe_1y": -0.39,
-        "max_drawdown_1y": -64.31,
         "dist_200dma": -39.16,
         "pe": null,
         "pb": null,
-        "bi_stance": "Avoid / Overheated"
+        "bi_stance": "Avoid / Weak"
       },
       {
         "name": "Brent Crude",
@@ -527,7 +502,6 @@
         "5Y_CAGR": 2.45,
         "volatility_1y": 56.7,
         "sharpe_1y": 0.61,
-        "max_drawdown_1y": -39.53,
         "dist_200dma": -4.9,
         "pe": null,
         "pb": null,
@@ -547,7 +521,6 @@
         "5Y_CAGR": 4.51,
         "volatility_1y": 7.52,
         "sharpe_1y": -0.45,
-        "max_drawdown_1y": -4.35,
         "dist_200dma": -2.09,
         "pe": null,
         "pb": null,
@@ -567,7 +540,6 @@
         "5Y_CAGR": 1.47,
         "volatility_1y": 5.21,
         "sharpe_1y": -0.62,
-        "max_drawdown_1y": -3.95,
         "dist_200dma": 3.8,
         "pe": null,
         "pb": null,
@@ -587,7 +559,6 @@
         "5Y_CAGR": 24.75,
         "volatility_1y": 15.51,
         "sharpe_1y": 0.78,
-        "max_drawdown_1y": -8.92,
         "dist_200dma": 6.67,
         "pe": null,
         "pb": null,
