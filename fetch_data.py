@@ -9,7 +9,7 @@ from datetime import datetime, timezone, timedelta
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
-# ETF proxies used to fetch real P/E & P/B multiples where raw indices return None
+# ETF proxies used to fetch real P/E multiples where raw indices return None
 VALUATION_PROXIES = {
     "^NSEI": ["NIFTYBEES.NS"],
     "^NSMIDCP": ["JUNIORBEES.NS"],
@@ -65,6 +65,7 @@ def get_currency_symbol(name, ticker):
 
 
 def fetch_valuation_multiples(ticker):
+    """Fetch P/E from ticker, falling back to liquid ETF proxies."""
     candidates = [ticker] + VALUATION_PROXIES.get(ticker, [])
     for sym in candidates:
         try:
@@ -75,16 +76,7 @@ def fetch_valuation_multiples(ticker):
         except Exception:
             continue
     return None, None
-# 14-day RSI
-    delta = close.diff()
-    gain = delta.clip(lower=0).rolling(14).mean()
-    loss = (-delta.clip(upper=0)).rolling(14).mean()
-    rs = gain / loss.replace(0, np.nan)
-    rsi_14 = round(float(100 - (100 / (1 + rs.iloc[-1]))), 1) if len(close) >= 15 and not pd.isna(rs.iloc[-1]) else None
 
-    # Distance from 52-Week High
-    high_52w = float(recent_1y.max())
-    from_52w_high = round(((current_price / high_52w) - 1) * 100, 2) if high_52w > 0 else None
 
 def compute_bi_stance(pe, pb, dist_200dma, r_1m, r_3m, sharpe):
     score = 0
@@ -96,12 +88,6 @@ def compute_bi_stance(pe, pb, dist_200dma, r_1m, r_3m, sharpe):
         elif pe > 32:
             score -= 2
         else:
-            score -= 1
-
-    if pb is not None:
-        if pb < 2.5:
-            score += 1
-        elif pb > 5.0:
             score -= 1
 
     if dist_200dma is not None:
@@ -159,6 +145,17 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, pb=None, currenc
     dma_200 = float(close.tail(200).mean()) if len(close) >= 200 else None
     dist_200dma = round(((current_price / dma_200) - 1) * 100, 2) if dma_200 else None
 
+    # 14-day RSI
+    delta = close.diff()
+    gain = delta.clip(lower=0).rolling(14).mean()
+    loss = (-delta.clip(upper=0)).rolling(14).mean()
+    rs = gain / loss.replace(0, np.nan)
+    rsi_14 = round(float(100 - (100 / (1 + rs.iloc[-1]))), 1) if len(close) >= 15 and not pd.isna(rs.iloc[-1]) else None
+
+    # Distance from 52-Week High
+    high_52w = float(recent_1y.max())
+    from_52w_high = round(((current_price / high_52w) - 1) * 100, 2) if high_52w > 0 else None
+
     bi_stance = compute_bi_stance(pe, pb, dist_200dma, r_1m, r_3m, sharpe)
 
     return {
@@ -176,6 +173,8 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, pb=None, currenc
         "volatility_1y": ann_vol,
         "sharpe_1y": sharpe,
         "dist_200dma": dist_200dma,
+        "rsi_14": rsi_14,
+        "from_52w_high": from_52w_high,
         "pe": pe,
         "pb": pb,
         "bi_stance": bi_stance,
@@ -193,8 +192,7 @@ def analyze_ticker(name, ticker, category, rf_rate=0.068):
         pe_ratio, pb_ratio = fetch_valuation_multiples(ticker) if is_equity else (None, None)
         currency = get_currency_symbol(name, ticker)
 
-        return analyze_series(name, ticker, close, rf_rate, pe_ratio, pb_ratio, currency,"rsi_14": rsi_14,
-        "from_52w_high": from_52w_high,), close
+        return analyze_series(name, ticker, close, rf_rate, pe_ratio, pb_ratio, currency), close
     except Exception as e:
         print(f"Error fetching {name} ({ticker}): {e}")
         return None, None
