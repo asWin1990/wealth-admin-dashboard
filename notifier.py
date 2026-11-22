@@ -93,7 +93,7 @@ def build_html_email(snapshot, dashboard_url):
               <tbody>{rows_html}</tbody>
             </table>
 
-            <h3 style="color:#0f172a;border-bottom:2px solid #d4af37;padding-bottom:6px;margin-top:24px;">Top 10 Verified Financial News (40% India / 60% Global)</h3>
+            <h3 style="color:#0f172a;border-bottom:2px solid #d4af37;padding-bottom:6px;margin-top:24px;">Top 10 Verified Financial News </h3>
             <ul style="list-style:none;padding-left:0;font-size:13px;">{news_html}</ul>
 
             <div style="text-align:center;margin-top:24px;">
