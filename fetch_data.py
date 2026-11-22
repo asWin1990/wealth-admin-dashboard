@@ -9,11 +9,25 @@ from datetime import datetime, timezone, timedelta
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
-# Currency prefix mapping
-CURRENCY_MAP = {
-    "indian_equity": "pts",
-    "indian_sectors": "pts",
-    "global_indices": "pts",
+# ETF proxies used to fetch real P/E & P/B multiples where raw indices return None
+VALUATION_PROXIES = {
+    "^NSEI": "NIFTYBEES.NS",
+    "^NSMIDCP": "JUNIORBEES.NS",
+    "^CRSLDX": "MONIFTY500.NS",
+    "^NSEBANK": "BANKBEES.NS",
+    "^CNXPSUBANK": "PSUBNKBEES.NS",
+    "^CNXIT": "ITBEES.NS",
+    "^CNXPHARMA": "PHARMABEES.NS",
+    "^CNXINFRA": "INFRABEES.NS",
+    "^CNXAUTO": "AUTOBEES.NS",
+    "^CNXFMCG": "FMCGIETF.NS",
+    "^CNXMETAL": "METALIETF.NS",
+    "^CNXENERGY": "OILIETF.NS",
+    "^GSPC": "SPY",
+    "^NDX": "QQQ",
+    "^HSI": "EWH",
+    "^N225": "EWJ",
+    "^GDAXI": "EWG",
 }
 
 
@@ -38,39 +52,46 @@ def calc_pct_return(series, trading_days):
     return round(((end / start) - 1) * 100, 2)
 
 
-def get_currency_symbol(name, ticker, category):
+def get_currency_symbol(name, ticker):
     if "VIX" in name:
         return ""
     if "Yield" in name or "TNX" in ticker:
         return "%"
     if "INR" in name or ticker.endswith(".NS") or ticker.endswith(".BO"):
-        if "USD / INR" in name:
-            return "₹"
-        return "₹" if ticker.endswith(".NS") else ""
+        return "₹"
     if "USD" in name or "Crude" in name or ticker in ["GC=F", "SI=F", "BZ=F", "EEM"]:
         return "$"
     return ""
 
 
-def compute_bi_stance(pe, pb, dist_200dma, r_1m, r_3m, sharpe):
-    """
-    Business Intelligence Stance combining Valuation (P/E, P/B),
-    Trend (200-DMA, 1M/3M momentum), and Risk-Adjusted Quality (Sharpe).
-    """
-    score = 0
-    reasons = []
+def fetch_valuation_multiples(ticker):
+    """Fetch P/E and P/B from ticker, falling back to its liquid ETF proxy."""
+    for sym in [ticker, VALUATION_PROXIES.get(ticker)]:
+        if not sym:
+            continue
+        try:
+            info = yf.Ticker(sym).info or {}
+            pe = info.get("trailingPE")
+            pb = info.get("priceToBook")
+            if pe or pb:
+                return (
+                    round(float(pe), 2) if pe else None,
+                    round(float(pb), 2) if pb else None,
+                )
+        except Exception:
+            continue
+    return None, None
 
-    # 1. Valuation Pillar
+
+def compute_bi_stance(pe, pb, dist_200dma, r_1m, r_3m, sharpe):
+    score = 0
     if pe is not None:
         if pe < 18:
             score += 2
-            reasons.append("Attractive P/E")
         elif pe <= 25:
             score += 1
-            reasons.append("Fair P/E")
         elif pe > 32:
             score -= 2
-            reasons.append("Rich P/E")
         else:
             score -= 1
 
@@ -80,22 +101,16 @@ def compute_bi_stance(pe, pb, dist_200dma, r_1m, r_3m, sharpe):
         elif pb > 5.0:
             score -= 1
 
-    # 2. Trend & Mean-Reversion Pillar
     if dist_200dma is not None:
         if -12 <= dist_200dma <= 0 and (r_1m is not None and r_1m > 0):
             score += 2
-            reasons.append("Reversing from 200-DMA")
         elif 0 < dist_200dma <= 12:
             score += 1
-            reasons.append("Healthy Uptrend")
         elif dist_200dma > 16:
             score -= 2
-            reasons.append("Overextended")
         elif dist_200dma < -12:
             score -= 1
-            reasons.append("Deep Drawdown")
 
-    # 3. Momentum & Risk-Adjusted Quality
     if r_3m is not None:
         if r_3m > 4:
             score += 1
@@ -108,20 +123,18 @@ def compute_bi_stance(pe, pb, dist_200dma, r_1m, r_3m, sharpe):
         elif sharpe < -0.3:
             score -= 1
 
-    # Final BI Judgement
     if score >= 3:
-        return "Strong Buy (Value + Trend)"
+        return "Strong Buy"
     elif score == 2:
         return "Accumulate"
     elif score in [0, 1]:
         return "Hold / Neutral"
     elif score == -1:
         return "Cautious / Trim"
-    else:
-        return "Avoid / Overheated"
+    return "Avoid / Weak"
 
 
-def analyze_series(name, ticker, close, category, rf_rate=0.068, pe=None, pb=None, currency=""):
+def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, pb=None, currency=""):
     current_price = round(float(close.iloc[-1]), 2)
 
     r_1d = calc_pct_return(close, 1)
@@ -139,9 +152,6 @@ def analyze_series(name, ticker, close, category, rf_rate=0.068, pe=None, pb=Non
     sharpe = None
     if r_1y is not None and ann_vol and ann_vol > 0:
         sharpe = round(((r_1y / 100) - rf_rate) / (ann_vol / 100), 2)
-
-    rolling_max = recent_1y.cummax()
-    max_dd = round(float(((recent_1y / rolling_max - 1) * 100).min()), 2)
 
     dma_200 = float(close.tail(200).mean()) if len(close) >= 200 else None
     dist_200dma = round(((current_price / dma_200) - 1) * 100, 2) if dma_200 else None
@@ -162,7 +172,6 @@ def analyze_series(name, ticker, close, category, rf_rate=0.068, pe=None, pb=Non
         "5Y_CAGR": r_5y_cagr,
         "volatility_1y": ann_vol,
         "sharpe_1y": sharpe,
-        "max_drawdown_1y": max_dd,
         "dist_200dma": dist_200dma,
         "pe": pe,
         "pb": pb,
@@ -172,21 +181,16 @@ def analyze_series(name, ticker, close, category, rf_rate=0.068, pe=None, pb=Non
 
 def analyze_ticker(name, ticker, category, rf_rate=0.068):
     try:
-        t = yf.Ticker(ticker)
-        hist = t.history(period="5y", auto_adjust=True)
+        hist = yf.Ticker(ticker).history(period="5y", auto_adjust=True)
         if hist.empty or len(hist) < 20:
             return None, None
 
         close = hist["Close"].dropna()
-        info = t.info or {}
-        pe_ratio = info.get("trailingPE")
-        pb_ratio = info.get("priceToBook")
-        pe_ratio = round(float(pe_ratio), 2) if pe_ratio else None
-        pb_ratio = round(float(pb_ratio), 2) if pb_ratio else None
-        currency = get_currency_symbol(name, ticker, category)
+        is_equity = category in ["indian_equity", "indian_sectors", "global_indices"] and "VIX" not in name
+        pe_ratio, pb_ratio = fetch_valuation_multiples(ticker) if is_equity else (None, None)
+        currency = get_currency_symbol(name, ticker)
 
-        data = analyze_series(name, ticker, close, category, rf_rate, pe_ratio, pb_ratio, currency)
-        return data, close
+        return analyze_series(name, ticker, close, rf_rate, pe_ratio, pb_ratio, currency), close
     except Exception as e:
         print(f"Error fetching {name} ({ticker}): {e}")
         return None, None
@@ -228,7 +232,6 @@ def run_fetch():
     for category, tickers in cfg["benchmarks"].items():
         snapshot["markets"][category] = []
         for name, ticker in tickers.items():
-            # Skip old Gold Bees ETF in favor of synthetic Gold INR / 10g
             if ticker == "GOLDBEES.NS":
                 continue
             print(f"Fetching {name} ({ticker})...")
@@ -237,7 +240,7 @@ def run_fetch():
                 snapshot["markets"][category].append(data)
                 series_cache[ticker] = close
 
-    # Compute live Gold (INR / 10g) = (Gold USD/oz / 31.1034768) * USD/INR * 10
+    # Live Gold (INR / 10g)
     if "GC=F" in series_cache and "INR=X" in series_cache:
         gold_usd = series_cache["GC=F"].tz_localize(None)
         usdinr = series_cache["INR=X"].tz_localize(None)
@@ -245,11 +248,10 @@ def run_fetch():
         if len(aligned) > 20:
             gold_inr_10g = (aligned["gold"] / 31.1034768) * aligned["fx"] * 10
             gold_inr_data = analyze_series(
-                "Gold (INR / 10g)", "GOLD_INR_10G", gold_inr_10g, "macro_commodities_fx", rf_rate, currency="₹"
+                "Gold (INR / 10g)", "GOLD_INR_10G", gold_inr_10g, rf_rate, currency="₹"
             )
             snapshot["markets"].setdefault("macro_commodities_fx", []).insert(0, gold_inr_data)
 
-    print("Fetching Tier-1 RSS news feeds...")
     snapshot["raw_news"] = fetch_rss_news(cfg["rss_feeds"])
 
     os.makedirs("data", exist_ok=True)
