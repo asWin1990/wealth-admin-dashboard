@@ -1,5 +1,5 @@
 {
-  "updated_at_ist": "23 Nov 2026, 02:04 AM IST",
+  "updated_at_ist": "23 Nov 2026, 02:25 AM IST",
   "macro_manual": {
     "rbi_repo_rate": 6.5,
     "india_10y_gsec_approx": 6.85,
@@ -10,6 +10,7 @@
       {
         "name": "Nifty 50 (Large Cap)",
         "ticker": "^NSEI",
+        "currency": "",
         "price": 25800.6,
         "1D": 1.12,
         "1W": 2.61,
@@ -24,12 +25,12 @@
         "dist_200dma": 7.51,
         "pe": null,
         "pb": null,
-        "signal": "Bullish Trend",
-        "stance": "Overweight"
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "Nifty Next 50",
         "ticker": "^NSMIDCP",
+        "currency": "",
         "price": 73207.25,
         "1D": 0.44,
         "1W": 0.46,
@@ -44,12 +45,12 @@
         "dist_200dma": 4.23,
         "pe": null,
         "pb": null,
-        "signal": "Neutral",
-        "stance": "Neutral"
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "Nifty Midcap 150",
         "ticker": "MID150BEES.NS",
+        "currency": "\u20b9",
         "price": 235.09,
         "1D": 0.14,
         "1W": 0.16,
@@ -64,12 +65,12 @@
         "dist_200dma": null,
         "pe": 27.06,
         "pb": null,
-        "signal": "Neutral",
-        "stance": "Overweight"
+        "bi_stance": "Cautious / Trim"
       },
       {
         "name": "Nifty Smallcap 250",
         "ticker": "HDFCSML250.NS",
+        "currency": "\u20b9",
         "price": 179.11,
         "1D": -0.28,
         "1W": -0.97,
@@ -84,12 +85,12 @@
         "dist_200dma": 4.1,
         "pe": 25.24,
         "pb": null,
-        "signal": "Neutral",
-        "stance": "Overweight"
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "Nifty 500 (Flexi/Multi)",
         "ticker": "^CRSLDX",
+        "currency": "",
         "price": 24088.8,
         "1D": 0.8,
         "1W": 1.49,
@@ -104,12 +105,12 @@
         "dist_200dma": 5.67,
         "pe": null,
         "pb": null,
-        "signal": "Neutral",
-        "stance": "Overweight"
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "India VIX",
         "ticker": "^INDIAVIX",
+        "currency": "",
         "price": 17.32,
         "1D": 7.51,
         "1W": 11.74,
@@ -124,14 +125,14 @@
         "dist_200dma": 13.06,
         "pe": null,
         "pb": null,
-        "signal": "Bullish Trend",
-        "stance": "Neutral"
+        "bi_stance": "Hold / Neutral"
       }
     ],
     "indian_sectors": [
       {
         "name": "Nifty Pharma",
         "ticker": "^CNXPHARMA",
+        "currency": "",
         "price": 28386.9,
         "1D": 0.05,
         "1W": -0.52,
@@ -146,12 +147,12 @@
         "dist_200dma": 14.09,
         "pe": null,
         "pb": null,
-        "signal": "Bullish Trend",
-        "stance": "Overweight"
+        "bi_stance": "Accumulate"
       },
       {
         "name": "Nifty Infrastructure",
         "ticker": "^CNXINFRA",
+        "currency": "",
         "price": 9689.4,
         "1D": 0.61,
         "1W": 2.21,
@@ -166,12 +167,12 @@
         "dist_200dma": 5.09,
         "pe": null,
         "pb": null,
-        "signal": "Bullish Trend",
-        "stance": "Overweight"
+        "bi_stance": "Accumulate"
       },
       {
         "name": "Nifty Bank",
         "ticker": "^NSEBANK",
+        "currency": "",
         "price": 64635.2,
         "1D": 2.49,
         "1W": 5.9,
@@ -186,12 +187,12 @@
         "dist_200dma": 13.89,
         "pe": null,
         "pb": null,
-        "signal": "Bullish Trend",
-        "stance": "Underweight"
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "Nifty PSU Bank",
         "ticker": "^CNXPSUBANK",
+        "currency": "",
         "price": 9881.05,
         "1D": 1.23,
         "1W": 6.72,
@@ -206,12 +207,12 @@
         "dist_200dma": 15.23,
         "pe": null,
         "pb": null,
-        "signal": "Extended / Caution",
-        "stance": "Neutral"
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "Nifty IT",
         "ticker": "^CNXIT",
+        "currency": "",
         "price": 31322.65,
         "1D": 1.3,
         "1W": -1.91,
@@ -226,12 +227,12 @@
         "dist_200dma": 3.63,
         "pe": null,
         "pb": null,
-        "signal": "Neutral",
-        "stance": "Neutral"
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "Nifty Auto",
         "ticker": "^CNXAUTO",
+        "currency": "",
         "price": 28787.65,
         "1D": 0.65,
         "1W": 3.07,
@@ -246,12 +247,12 @@
         "dist_200dma": 7.22,
         "pe": null,
         "pb": null,
-        "signal": "Neutral",
-        "stance": "Neutral"
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "Nifty FMCG",
         "ticker": "^CNXFMCG",
+        "currency": "",
         "price": 48535.7,
         "1D": -0.06,
         "1W": 3.63,
@@ -266,12 +267,12 @@
         "dist_200dma": 0.49,
         "pe": null,
         "pb": null,
-        "signal": "Neutral",
-        "stance": "Neutral"
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "Nifty Metal",
         "ticker": "^CNXMETAL",
+        "currency": "",
         "price": 12271.1,
         "1D": -0.23,
         "1W": -2.98,
@@ -286,12 +287,12 @@
         "dist_200dma": -2.31,
         "pe": null,
         "pb": null,
-        "signal": "Accumulate (Reversing)",
-        "stance": "Neutral"
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "Nifty Energy",
         "ticker": "^CNXENERGY",
+        "currency": "",
         "price": 37321.25,
         "1D": -0.22,
         "1W": -0.21,
@@ -306,12 +307,12 @@
         "dist_200dma": -1.56,
         "pe": null,
         "pb": null,
-        "signal": "Accumulate (Reversing)",
-        "stance": "Neutral"
+        "bi_stance": "Accumulate"
       },
       {
         "name": "Nifty Realty",
         "ticker": "^CNXREALTY",
+        "currency": "",
         "price": 938.9,
         "1D": 1.71,
         "1W": 1.92,
@@ -326,14 +327,14 @@
         "dist_200dma": 13.81,
         "pe": null,
         "pb": null,
-        "signal": "Bullish Trend",
-        "stance": "Neutral"
+        "bi_stance": "Hold / Neutral"
       }
     ],
     "global_indices": [
       {
         "name": "S&P 500 (US Broad)",
         "ticker": "^GSPC",
+        "currency": "",
         "price": 6910.39,
         "1D": -3.7,
         "1W": -8.61,
@@ -348,12 +349,12 @@
         "dist_200dma": -5.96,
         "pe": null,
         "pb": null,
-        "signal": "Weak / Watchlist",
-        "stance": "Neutral"
+        "bi_stance": "Cautious / Trim"
       },
       {
         "name": "Nasdaq 100 (US Tech)",
         "ticker": "^NDX",
+        "currency": "",
         "price": 25028.98,
         "1D": -5.61,
         "1W": -10.43,
@@ -368,12 +369,12 @@
         "dist_200dma": -10.84,
         "pe": null,
         "pb": null,
-        "signal": "Weak / Watchlist",
-        "stance": "Neutral"
+        "bi_stance": "Cautious / Trim"
       },
       {
         "name": "Hang Seng (China/HK)",
         "ticker": "^HSI",
+        "currency": "",
         "price": 22410.8,
         "1D": -1.89,
         "1W": -5.19,
@@ -388,12 +389,12 @@
         "dist_200dma": -10.8,
         "pe": null,
         "pb": null,
-        "signal": "Weak / Watchlist",
-        "stance": "Neutral"
+        "bi_stance": "Avoid / Overheated"
       },
       {
         "name": "Nikkei 225 (Japan)",
         "ticker": "^N225",
+        "currency": "",
         "price": 56436.65,
         "1D": -5.06,
         "1W": -7.7,
@@ -408,12 +409,12 @@
         "dist_200dma": -9.36,
         "pe": null,
         "pb": null,
-        "signal": "Weak / Watchlist",
-        "stance": "Neutral"
+        "bi_stance": "Cautious / Trim"
       },
       {
         "name": "MSCI Emerging Markets",
         "ticker": "EEM",
+        "currency": "$",
         "price": 53.84,
         "1D": -5.13,
         "1W": -11.62,
@@ -427,13 +428,13 @@
         "max_drawdown_1y": -24.39,
         "dist_200dma": -15.58,
         "pe": 12.64,
-        "pb": 1.02,
-        "signal": "Weak / Watchlist",
-        "stance": "Neutral"
+        "pb": null,
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "DAX (Europe)",
         "ticker": "^GDAXI",
+        "currency": "",
         "price": 24802.78,
         "1D": -2.6,
         "1W": -7.28,
@@ -448,14 +449,34 @@
         "dist_200dma": -0.78,
         "pe": null,
         "pb": null,
-        "signal": "Neutral",
-        "stance": "Neutral"
+        "bi_stance": "Cautious / Trim"
       }
     ],
     "macro_commodities_fx": [
       {
+        "name": "Gold (INR / 10g)",
+        "ticker": "GOLD_INR_10G",
+        "currency": "\u20b9",
+        "price": 104726.87,
+        "1D": -0.68,
+        "1W": -10.29,
+        "1M": -14.19,
+        "3M": -25.17,
+        "1Y": -13.88,
+        "3Y_CAGR": 23.69,
+        "5Y_CAGR": 19.4,
+        "volatility_1y": 28.96,
+        "sharpe_1y": -0.71,
+        "max_drawdown_1y": -33.46,
+        "dist_200dma": -22.1,
+        "pe": null,
+        "pb": null,
+        "bi_stance": "Avoid / Overheated"
+      },
+      {
         "name": "Gold (USD/oz)",
         "ticker": "GC=F",
+        "currency": "$",
         "price": 3515.4,
         "1D": -4.62,
         "1W": -9.54,
@@ -470,32 +491,12 @@
         "dist_200dma": -20.91,
         "pe": null,
         "pb": null,
-        "signal": "Weak / Watchlist",
-        "stance": "Neutral"
-      },
-      {
-        "name": "Gold Bees (India ETF)",
-        "ticker": "GOLDBEES.NS",
-        "price": 102.21,
-        "1D": -3.85,
-        "1W": -8.67,
-        "1M": -13.48,
-        "3M": -18.71,
-        "1Y": -3.0,
-        "3Y_CAGR": 25.56,
-        "5Y_CAGR": 19.34,
-        "volatility_1y": 32.0,
-        "sharpe_1y": -0.31,
-        "max_drawdown_1y": -30.25,
-        "dist_200dma": -17.0,
-        "pe": null,
-        "pb": null,
-        "signal": "Weak / Watchlist",
-        "stance": "Neutral"
+        "bi_stance": "Avoid / Overheated"
       },
       {
         "name": "Silver (USD/oz)",
         "ticker": "SI=F",
+        "currency": "$",
         "price": 41.07,
         "1D": -7.33,
         "1W": -16.24,
@@ -510,12 +511,12 @@
         "dist_200dma": -39.16,
         "pe": null,
         "pb": null,
-        "signal": "Weak / Watchlist",
-        "stance": "Neutral"
+        "bi_stance": "Avoid / Overheated"
       },
       {
         "name": "Brent Crude",
         "ticker": "BZ=F",
+        "currency": "$",
         "price": 89.95,
         "1D": -2.21,
         "1W": -6.15,
@@ -530,12 +531,12 @@
         "dist_200dma": -4.9,
         "pe": null,
         "pb": null,
-        "signal": "Neutral",
-        "stance": "Neutral"
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "USD / INR",
         "ticker": "INR=X",
+        "currency": "\u20b9",
         "price": 92.66,
         "1D": -0.68,
         "1W": -1.67,
@@ -550,12 +551,12 @@
         "dist_200dma": -2.09,
         "pe": null,
         "pb": null,
-        "signal": "Neutral",
-        "stance": "Neutral"
+        "bi_stance": "Cautious / Trim"
       },
       {
         "name": "US Dollar Index (DXY)",
         "ticker": "DX-Y.NYB",
+        "currency": "",
         "price": 103.81,
         "1D": -0.09,
         "1W": 0.39,
@@ -570,12 +571,12 @@
         "dist_200dma": 3.8,
         "pe": null,
         "pb": null,
-        "signal": "Bullish Trend",
-        "stance": "Neutral"
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "US 10Y Treasury Yield",
         "ticker": "^TNX",
+        "currency": "%",
         "price": 4.91,
         "1D": -2.77,
         "1W": -4.7,
@@ -590,8 +591,7 @@
         "dist_200dma": 6.67,
         "pe": null,
         "pb": null,
-        "signal": "Bullish Trend",
-        "stance": "Neutral"
+        "bi_stance": "Accumulate"
       }
     ]
   },
