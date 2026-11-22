@@ -1,5 +1,5 @@
 {
-  "updated_at_ist": "23 Nov 2026, 02:37 AM IST",
+  "updated_at_ist": "23 Nov 2026, 02:59 AM IST",
   "macro_manual": {
     "rbi_repo_rate": 6.5,
     "india_10y_gsec_approx": 6.85,
@@ -22,6 +22,8 @@
         "volatility_1y": 14.32,
         "sharpe_1y": -0.5,
         "dist_200dma": 7.51,
+        "rsi_14": 90.7,
+        "from_52w_high": -2.01,
         "pe": 22.32,
         "pb": null,
         "bi_stance": "Accumulate"
@@ -41,6 +43,8 @@
         "volatility_1y": 17.83,
         "sharpe_1y": -0.11,
         "dist_200dma": 4.23,
+        "rsi_14": 78.4,
+        "from_52w_high": -2.09,
         "pe": 18.42,
         "pb": null,
         "bi_stance": "Accumulate"
@@ -60,6 +64,8 @@
         "volatility_1y": 17.26,
         "sharpe_1y": null,
         "dist_200dma": null,
+        "rsi_14": 68.0,
+        "from_52w_high": -0.96,
         "pe": 27.06,
         "pb": null,
         "bi_stance": "Cautious / Trim"
@@ -79,6 +85,8 @@
         "volatility_1y": 18.5,
         "sharpe_1y": -0.12,
         "dist_200dma": 4.1,
+        "rsi_14": 74.0,
+        "from_52w_high": -4.08,
         "pe": 25.24,
         "pb": null,
         "bi_stance": "Hold / Neutral"
@@ -98,6 +106,8 @@
         "volatility_1y": 14.81,
         "sharpe_1y": -0.34,
         "dist_200dma": 5.67,
+        "rsi_14": 88.6,
+        "from_52w_high": -0.04,
         "pe": 22.73,
         "pb": null,
         "bi_stance": "Hold / Neutral"
@@ -117,6 +127,8 @@
         "volatility_1y": 100.17,
         "sharpe_1y": 0.32,
         "dist_200dma": 13.06,
+        "rsi_14": 63.3,
+        "from_52w_high": -37.9,
         "pe": null,
         "pb": null,
         "bi_stance": "Hold / Neutral"
@@ -138,9 +150,11 @@
         "volatility_1y": 14.57,
         "sharpe_1y": 1.38,
         "dist_200dma": 14.09,
-        "pe": null,
+        "rsi_14": 71.8,
+        "from_52w_high": -1.76,
+        "pe": 43.98,
         "pb": null,
-        "bi_stance": "Accumulate"
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "Nifty Infrastructure",
@@ -157,6 +171,8 @@
         "volatility_1y": 15.73,
         "sharpe_1y": -0.3,
         "dist_200dma": 5.09,
+        "rsi_14": 89.9,
+        "from_52w_high": -0.78,
         "pe": 24.06,
         "pb": null,
         "bi_stance": "Strong Buy"
@@ -176,6 +192,8 @@
         "volatility_1y": 17.95,
         "sharpe_1y": 0.23,
         "dist_200dma": 13.89,
+        "rsi_14": 93.7,
+        "from_52w_high": 0.0,
         "pe": 15.05,
         "pb": null,
         "bi_stance": "Strong Buy"
@@ -195,6 +213,8 @@
         "volatility_1y": 24.37,
         "sharpe_1y": 0.5,
         "dist_200dma": 15.23,
+        "rsi_14": 92.2,
+        "from_52w_high": 0.0,
         "pe": 8.68,
         "pb": null,
         "bi_stance": "Strong Buy"
@@ -214,6 +234,8 @@
         "volatility_1y": 26.41,
         "sharpe_1y": -0.83,
         "dist_200dma": 3.63,
+        "rsi_14": 34.6,
+        "from_52w_high": -20.68,
         "pe": 19.3,
         "pb": null,
         "bi_stance": "Hold / Neutral"
@@ -233,6 +255,8 @@
         "volatility_1y": 22.32,
         "sharpe_1y": -0.03,
         "dist_200dma": 7.22,
+        "rsi_14": 78.0,
+        "from_52w_high": -2.9,
         "pe": 29.84,
         "pb": null,
         "bi_stance": "Hold / Neutral"
@@ -252,6 +276,8 @@
         "volatility_1y": 16.22,
         "sharpe_1y": -1.19,
         "dist_200dma": 0.49,
+        "rsi_14": 89.6,
+        "from_52w_high": -12.83,
         "pe": null,
         "pb": null,
         "bi_stance": "Hold / Neutral"
@@ -271,6 +297,8 @@
         "volatility_1y": 23.25,
         "sharpe_1y": 0.4,
         "dist_200dma": -2.31,
+        "rsi_14": 63.0,
+        "from_52w_high": -10.55,
         "pe": 15.7,
         "pb": null,
         "bi_stance": "Strong Buy"
@@ -290,6 +318,8 @@
         "volatility_1y": 16.71,
         "sharpe_1y": -0.2,
         "dist_200dma": -1.56,
+        "rsi_14": 78.2,
+        "from_52w_high": -10.15,
         "pe": 10.87,
         "pb": null,
         "bi_stance": "Strong Buy"
@@ -309,6 +339,8 @@
         "volatility_1y": 27.71,
         "sharpe_1y": -0.26,
         "dist_200dma": 13.81,
+        "rsi_14": 81.4,
+        "from_52w_high": -0.68,
         "pe": null,
         "pb": null,
         "bi_stance": "Hold / Neutral"
@@ -330,8 +362,10 @@
         "volatility_1y": 14.31,
         "sharpe_1y": -0.19,
         "dist_200dma": -5.96,
+        "rsi_14": 29.2,
+        "from_52w_high": -11.62,
         "pe": 21.95,
-        "pb": 1.61,
+        "pb": null,
         "bi_stance": "Hold / Neutral"
       },
       {
@@ -349,9 +383,11 @@
         "volatility_1y": 22.2,
         "sharpe_1y": -0.24,
         "dist_200dma": -10.84,
+        "rsi_14": 31.3,
+        "from_52w_high": -19.84,
         "pe": 25.06,
-        "pb": 1.7,
-        "bi_stance": "Cautious / Trim"
+        "pb": null,
+        "bi_stance": "Avoid / Weak"
       },
       {
         "name": "Hang Seng (China/HK)",
@@ -368,8 +404,10 @@
         "volatility_1y": 18.89,
         "sharpe_1y": -1.25,
         "dist_200dma": -10.8,
+        "rsi_14": 38.4,
+        "from_52w_high": -19.87,
         "pe": 12.7,
-        "pb": 0.85,
+        "pb": null,
         "bi_stance": "Hold / Neutral"
       },
       {
@@ -387,9 +425,11 @@
         "volatility_1y": 29.99,
         "sharpe_1y": 0.14,
         "dist_200dma": -9.36,
+        "rsi_14": 29.0,
+        "from_52w_high": -22.01,
         "pe": 13.59,
-        "pb": 1.23,
-        "bi_stance": "Accumulate"
+        "pb": null,
+        "bi_stance": "Hold / Neutral"
       },
       {
         "name": "MSCI Emerging Markets",
@@ -406,8 +446,10 @@
         "volatility_1y": 27.25,
         "sharpe_1y": -0.18,
         "dist_200dma": -15.58,
+        "rsi_14": 28.9,
+        "from_52w_high": -24.39,
         "pe": 12.64,
-        "pb": 1.02,
+        "pb": null,
         "bi_stance": "Hold / Neutral"
       },
       {
@@ -425,9 +467,11 @@
         "volatility_1y": 16.44,
         "sharpe_1y": 0.04,
         "dist_200dma": -0.78,
+        "rsi_14": 36.1,
+        "from_52w_high": -7.36,
         "pe": 16.37,
-        "pb": 1.22,
-        "bi_stance": "Accumulate"
+        "pb": null,
+        "bi_stance": "Hold / Neutral"
       }
     ],
     "macro_commodities_fx": [
@@ -446,6 +490,8 @@
         "volatility_1y": 28.96,
         "sharpe_1y": -0.71,
         "dist_200dma": -22.1,
+        "rsi_14": 21.8,
+        "from_52w_high": -33.46,
         "pe": null,
         "pb": null,
         "bi_stance": "Avoid / Weak"
@@ -465,6 +511,8 @@
         "volatility_1y": 28.59,
         "sharpe_1y": -0.72,
         "dist_200dma": -20.91,
+        "rsi_14": 24.9,
+        "from_52w_high": -33.9,
         "pe": null,
         "pb": null,
         "bi_stance": "Avoid / Weak"
@@ -484,6 +532,8 @@
         "volatility_1y": 66.49,
         "sharpe_1y": -0.39,
         "dist_200dma": -39.16,
+        "rsi_14": 24.6,
+        "from_52w_high": -64.31,
         "pe": null,
         "pb": null,
         "bi_stance": "Avoid / Weak"
@@ -503,6 +553,8 @@
         "volatility_1y": 56.7,
         "sharpe_1y": 0.61,
         "dist_200dma": -4.9,
+        "rsi_14": 27.1,
+        "from_52w_high": -24.0,
         "pe": null,
         "pb": null,
         "bi_stance": "Hold / Neutral"
@@ -522,6 +574,8 @@
         "volatility_1y": 7.52,
         "sharpe_1y": -0.45,
         "dist_200dma": -2.09,
+        "rsi_14": 18.5,
+        "from_52w_high": -4.35,
         "pe": null,
         "pb": null,
         "bi_stance": "Cautious / Trim"
@@ -541,6 +595,8 @@
         "volatility_1y": 5.21,
         "sharpe_1y": -0.62,
         "dist_200dma": 3.8,
+        "rsi_14": 73.5,
+        "from_52w_high": -0.09,
         "pe": null,
         "pb": null,
         "bi_stance": "Hold / Neutral"
@@ -560,6 +616,8 @@
         "volatility_1y": 15.51,
         "sharpe_1y": 0.78,
         "dist_200dma": 6.67,
+        "rsi_14": 51.2,
+        "from_52w_high": -7.55,
         "pe": null,
         "pb": null,
         "bi_stance": "Accumulate"
