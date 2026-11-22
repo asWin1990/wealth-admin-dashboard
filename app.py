@@ -260,10 +260,11 @@ def render_heatmap(items, show_valuation=True):
             "Vol %": x.get("volatility_1y"),
             "Sharpe": x.get("sharpe_1y"),
             "vs 200-DMA": x.get("dist_200dma"),
+            "RSI": x.get("rsi_14"),
+            "vs 52W High": x.get("from_52w_high"),
         }
-        if show_valuation:
+       if show_valuation:
             row["P/E"] = x.get("pe")
-            row["P/B"] = x.get("pb")
         row["BI Stance"] = x.get("bi_stance", "Neutral")
         rows.append(row)
 
@@ -283,9 +284,14 @@ def render_heatmap(items, show_valuation=True):
             return "background-color: rgba(239, 68, 68, 0.12); color: #FEE2E2;"
         return ""
 
-    fmt_map = {c: "{:+.2f}%" for c in ret_cols} | {"Vol %": "{:.1f}%", "Sharpe": "{:.2f}"}
+   fmt_map = {c: "{:+.2f}%" for c in ret_cols} | {
+        "Vol %": "{:.1f}%",
+        "Sharpe": "{:.2f}",
+        "RSI": "{:.1f}",
+        "vs 52W High": "{:+.1f}%",
+    }
     if show_valuation:
-        fmt_map |= {"P/E": "{:.1f}", "P/B": "{:.1f}"}
+        fmt_map["P/E"] = "{:.1f}"
 
     styled = df.style.map(color_cells, subset=ret_cols).format(fmt_map, na_rep="—")
     st.dataframe(styled, use_container_width=True, hide_index=True)
