@@ -1,0 +1,78 @@
+# Your current advisory stances (Overweight / Neutral / Underweight)
+advisory_stances:
+  "Nifty 50 (Large Cap)": "Overweight"
+  "Nifty Midcap 150": "Overweight"
+  "Nifty Smallcap 250": "Overweight"
+  "Nifty 500 (Flexi/Multi)": "Overweight"
+  "Nifty Pharma": "Overweight"
+  "Nifty Infrastructure": "Overweight"
+  "Nifty Bank": "Underweight"
+  "Nifty IT": "Neutral"
+  "Nifty Auto": "Neutral"
+  "Nifty FMCG": "Neutral"
+  "Nifty Metal": "Neutral"
+  "Nifty Energy": "Neutral"
+
+# Benchmark Universe (Yahoo Finance Tickers)
+benchmarks:
+  indian_equity:
+    "Nifty 50 (Large Cap)": "^NSEI"
+    "Nifty Next 50": "^NSMIDCP"
+    "Nifty Midcap 150": "MID150BEES.NS"
+    "Nifty Smallcap 250": "HDFCSML250.NS"
+    "Nifty 500 (Flexi/Multi)": "^CRSLDX"
+    "India VIX": "^INDIAVIX"
+
+  indian_sectors:
+    "Nifty Pharma": "^CNXPHARMA"
+    "Nifty Infrastructure": "^CNXINFRA"
+    "Nifty Bank": "^NSEBANK"
+    "Nifty PSU Bank": "^CNXPSUBANK"
+    "Nifty IT": "^CNXIT"
+    "Nifty Auto": "^CNXAUTO"
+    "Nifty FMCG": "^CNXFMCG"
+    "Nifty Metal": "^CNXMETAL"
+    "Nifty Energy": "^CNXENERGY"
+    "Nifty Realty": "^CNXREALTY"
+
+  global_indices:
+    "S&P 500 (US Broad)": "^GSPC"
+    "Nasdaq 100 (US Tech)": "^NDX"
+    "Hang Seng (China/HK)": "^HSI"
+    "Nikkei 225 (Japan)": "^N225"
+    "MSCI Emerging Markets": "EEM"
+    "DAX (Europe)": "^GDAXI"
+
+  macro_commodities_fx:
+    "Gold (USD/oz)": "GC=F"
+    "Gold Bees (India ETF)": "GOLDBEES.NS"
+    "Silver (USD/oz)": "SI=F"
+    "Brent Crude": "BZ=F"
+    "USD / INR": "INR=X"
+    "US Dollar Index (DXY)": "DX-Y.NYB"
+    "US 10Y Treasury Yield": "^TNX"
+
+# Manual Macro Rates (Update when RBI changes Repo Rate)
+macro_manual:
+  rbi_repo_rate: 6.50
+  india_10y_gsec_approx: 6.85
+  risk_free_rate_india: 0.068
+
+# Strict Tier-1 Whitelisted RSS Feeds (Zero Fake News Policy)
+rss_feeds:
+  india:
+    - name: "LiveMint Markets"
+      url: "https://www.livemint.com/rss/markets"
+    - name: "Economic Times Markets"
+      url: "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"
+    - name: "Business Standard Markets"
+      url: "https://www.business-standard.com/rss/markets-106.rss"
+  global:
+    - name: "CNBC Markets"
+      url: "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258"
+    - name: "MarketWatch Top Stories"
+      url: "https://feeds.content.dowjones.io/public/rss/mw_topstories"
+    - name: "Investing.com Macro"
+      url: "https://www.investing.com/rss/news_14.rss"
+    - name: "Yahoo Finance Global"
+      url: "https://finance.yahoo.com/news/rssindex"
