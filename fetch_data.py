@@ -357,4 +357,104 @@ def fetch_amfi_debt_schemes(per_bucket=3):
             nav_date = parts[5].strip() if len(parts) > 5 else ""
 
             try:
-                nav_val = round(float(nav
+                nav_val = round(float(nav_str), 4)
+            except ValueError:
+                continue
+
+            lower_name = scheme_name.lower()
+            if "growth" not in lower_name:
+                continue
+
+            for b in AMFI_DEBT_BUCKETS:
+                b_name = b["bucket"]
+                if found_counts[b_name] >= per_bucket:
+                    continue
+                if any(kw in lower_name for kw in b["keywords"]):
+                    schemes.append({
+                        "scheme_name": scheme_name[:68],
+                        "bucket": b_name,
+                        "duration": b["duration"],
+                        "credit": b["credit"],
+                        "nav": nav_val,
+                        "nav_date": nav_date,
+                    })
+                    found_counts[b_name] += 1
+                    break
+
+            if all(cnt >= per_bucket for cnt in found_counts.values()):
+                break
+    except Exception as e:
+        print(f"AMFI NAV fetch error: {e}")
+    return schemes
+
+
+def fetch_rss_news(rss_config, max_per_feed=6):
+    news_pool = {"india": [], "global": []}
+    for region in ["india", "global"]:
+        for source in rss_config.get(region, []):
+            try:
+                feed = feedparser.parse(source["url"])
+                for entry in feed.entries[:max_per_feed]:
+                    news_pool[region].append({
+                        "source": source["name"],
+                        "title": entry.get("title", "").strip(),
+                        "link": entry.get("link", ""),
+                        "published": entry.get("published", ""),
+                        "region": region.upper(),
+                    })
+            except Exception as e:
+                print(f"RSS error ({source['name']}): {e}")
+    return news_pool
+
+
+def run_fetch():
+    cfg = load_config()
+    rf_rate = cfg.get("macro_manual", {}).get("risk_free_rate_india", 0.068)
+
+    snapshot = {
+        "updated_at_ist": datetime.now(IST).strftime("%d %b %Y, %I:%M %p IST"),
+        "macro_manual": cfg.get("macro_manual", {}),
+        "markets": {},
+        "amfi_debt_schemes": [],
+        "raw_news": {},
+        "verified_news": [],
+        "ai_strategist": {},
+    }
+
+    series_cache = {}
+    for category, tickers in cfg["benchmarks"].items():
+        snapshot["markets"][category] = []
+        track_yoy = category in ["indian_equity", "global_indices"]
+        for name, ticker in tickers.items():
+            print(f"Fetching {name} ({ticker})...")
+            data, close = analyze_ticker(name, ticker, category, rf_rate, include_yoy=track_yoy)
+            if data:
+                snapshot["markets"][category].append(data)
+                series_cache[ticker] = close
+
+    if "GC=F" in series_cache and "INR=X" in series_cache:
+        gold_usd = series_cache["GC=F"].tz_localize(None)
+        usdinr = series_cache["INR=X"].tz_localize(None)
+        aligned = pd.concat([gold_usd.rename("gold"), usdinr.rename("fx")], axis=1).ffill().dropna()
+        if len(aligned) > 20:
+            gold_inr_10g = (aligned["gold"] / 31.1034768) * aligned["fx"] * 10
+            gold_inr_data = analyze_series(
+                "Gold INR / 10g", "GOLD_INR_10G", gold_inr_10g, rf_rate, currency="₹", mode="macro"
+            )
+            snapshot["markets"].setdefault("macro_commodities_fx", []).insert(0, gold_inr_data)
+
+    print("Fetching live Indian Debt & Liquid MF NAVs from AMFI...")
+    snapshot["amfi_debt_schemes"] = fetch_amfi_debt_schemes(per_bucket=3)
+
+    snapshot["raw_news"] = fetch_rss_news(cfg["rss_feeds"])
+
+    os.makedirs("data", exist_ok=True)
+    with open("data/market_snapshot.json", "w", encoding="utf-8") as f:
+        json.dump(snapshot, f, indent=2)
+
+    print("Saved data/market_snapshot.json successfully.")
+    return snapshot
+
+
+if __name__ == "__main__":
+    run_fetch()
