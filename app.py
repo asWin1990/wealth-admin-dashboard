@@ -126,16 +126,16 @@ with st.sidebar:
     if snapshot:
         printable_html = build_html_email(snapshot, "https://share.streamlit.io")
         st.download_button(
-            label="📄 Export Printable Brief (HTML)",
+            label="📄 Export Printable Brief",
             data=printable_html,
             file_name="AURA_BI_Daily_Brief.html",
             mime="text/html",
             use_container_width=True,
         )
-        st.caption("Open downloaded file in browser & press Ctrl+P for a crisp PDF.")
+        st.caption("Open downloaded file in browser and press Ctrl+P to save as PDF.")
 
     st.divider()
-    st.caption("Auto-Schedule: 8:30 AM & 4:30 PM IST (Mon–Fri)")
+    st.caption("Auto-Schedule: 8:30 AM and 4:30 PM IST, Mon–Fri")
 
 if not snapshot:
     st.warning("No snapshot found yet. Click **🔄 Refresh Live Data & AI** in the sidebar.")
@@ -158,14 +158,6 @@ def format_price(item):
     return f"{val:,.2f}"
 
 
-def fmt_arrow_pct(val):
-    if val is None or pd.isna(val):
-        return "—"
-    arrow = "▲" if val >= 0 else "▼"
-    sign = "+" if val > 0 else ""
-    return f"{arrow} {sign}{val:.2f}%"
-
-
 # --- HEADER ---
 regime = ai.get("market_regime", "Awaiting AI Sync")
 st.markdown(
@@ -181,7 +173,7 @@ st.markdown(
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- TOP KPI PULSE STRIP (7 CARDS) ---
+# --- TOP KPI PULSE STRIP ---
 def find_item(cat, keyword):
     for x in markets.get(cat, []):
         if keyword.lower() in x["name"].lower():
@@ -191,8 +183,8 @@ def find_item(cat, keyword):
 kpis = [
     ("Nifty 50", find_item("indian_equity", "Nifty 50")),
     ("BSE SENSEX", find_item("indian_equity", "SENSEX")),
-    ("S&P 500 (NY)", find_item("global_indices", "S&P 500")),
-    ("Gold (INR/10g)", find_item("macro_commodities_fx", "Gold (INR")),
+    ("S&P 500", find_item("global_indices", "S&P 500")),
+    ("Gold INR / 10g", find_item("macro_commodities_fx", "Gold INR")),
     ("USD / INR", find_item("macro_commodities_fx", "USD / INR")),
     ("India VIX", find_item("volatility_indices", "India VIX")),
 ]
@@ -233,22 +225,22 @@ with kpi_cols[6]:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- COLLAPSIBLE JARGON & CAGR METHODOLOGY DRAWER ---
-with st.expander("📘 Jargon Glossary & CAGR Methodology (Click to Expand / Collapse)"):
+# --- COLLAPSIBLE JARGON & CAGR METHODOLOGY ---
+with st.expander("📘 Jargon Glossary, CAGR Methodology and BI Stance Guide"):
     g1, g2 = st.columns(2)
     with g1:
         st.markdown("""
-        * **CAGR (3Y & 5Y):** Compound Annual Growth Rate — `((Ending Price / Beginning Price) ^ (1 / Years)) - 1`. Smooths multi-year returns into a steady annual equivalent.
-        * **1D / 1W / 1M / 3M / 1Y:** Point-to-point percentage return over 1, 5, 21, 63, and 252 trading sessions.
-        * **Vol % (1Y Volatility):** Annualized standard deviation of daily returns (`daily_std * √252`). Measures price swings / turbulence.
-        * **Sharpe (1Y):** `(1Y Return - 6.8% Risk-Free Rate) / 1Y Volatility`. Measures return earned per unit of risk (`> 1.0` = strong risk-adjusted return).
+        * **CAGR (3Y and 5Y):** Compound Annual Growth Rate — `((Ending Price / Beginning Price) ^ (1 / Years)) - 1`. Converts multi-year cumulative change into an annualized return rate.
+        * **1D, 1W, 1M, 3M and 1Y:** Point-to-point percentage price change over 1, 5, 21, 63, and 252 trading sessions.
+        * **Vol %:** Annualized standard deviation of daily returns (`daily_std * √252`). Tracks return dispersion and price swings.
+        * **Sharpe:** `(1Y Return - 6.8% Risk-Free Rate) / 1Y Volatility`. Gauges return generated per unit of risk on return assets (omitted on VIX indices).
         """)
     with g2:
         st.markdown("""
-        * **RSI (14):** 14-day Relative Strength Index (`0–100`). `< 35` flags oversold / potential bounce zone; `> 70` flags overbought / extended momentum.
-        * **vs 52W High:** Percentage distance below the 52-week peak (`-15%` means 15% off the highs).
-        * **vs 200-DMA:** Percentage above or below the 200-day moving average. Long-term trend line (`< 0%` with rising `1M` can signal early mean-reversion).
-        * **P/E & BI Stance:** Trailing Price-to-Earnings (via liquid ETF proxies for equity indices) combined with trend, momentum, and Sharpe to classify `Strong Buy`, `Accumulate`, `Hold / Neutral`, `Cautious / Trim`, or `Avoid / Weak`.
+        * **vs 52W High:** Percentage gap below the 52-week peak (`-15%` means 15% below the 1-year high).
+        * **vs 200-DMA:** Percentage distance above or below the 200-day moving average long-term trend line.
+        * **P/E:** Trailing Price-to-Earnings multiple (sourced directly or via liquid ETF proxies for equity indices).
+        * **BI Stance:** Multi-factor score combining valuation multiples, 200-DMA and 52W High positioning, 1M/3M/1Y momentum alignment, and Sharpe/volatility; volatility indices use regime and spike logic instead.
         """)
 
 # --- AI AGENT BRIEF ---
@@ -256,15 +248,15 @@ if ai:
     c1, c2 = st.columns(2)
     with c1:
         opp_md = "<br>".join(f"• {x}" for x in ai.get("opportunities", []))
-        st.markdown(f'<div class="ai-box"><strong>🎯 BI Opportunities (Value + Momentum)</strong><br><br>{opp_md}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="ai-box"><strong>🎯 BI Opportunities</strong><br><br>{opp_md}</div>', unsafe_allow_html=True)
     with c2:
         risk_md = "<br>".join(f"• {x}" for x in ai.get("risk_flags", []))
-        st.markdown(f'<div class="ai-box"><strong>⚠️ Risk & Overextension Alerts</strong><br><br>{risk_md}</div>', unsafe_allow_html=True)
-    st.info(f"**🏦 Debt Duration & Macro Call:** {ai.get('debt_and_macro', 'N/A')}")
+        st.markdown(f'<div class="ai-box"><strong>⚠️ Risk and Overextension Alerts</strong><br><br>{risk_md}</div>', unsafe_allow_html=True)
+    st.info(f"**🏦 Debt Duration and Macro Call:** {ai.get('debt_and_macro', 'N/A')}")
 
 
 # --- HEATMAP RENDERER ---
-def render_heatmap(items, show_valuation=True):
+def render_heatmap(items, show_valuation=True, show_risk_metrics=True):
     if not items:
         st.info("No data available. Click **🔄 Refresh Live Data & AI** in the sidebar.")
         return
@@ -282,11 +274,11 @@ def render_heatmap(items, show_valuation=True):
             "3Y CAGR": x.get("3Y_CAGR"),
             "5Y CAGR": x.get("5Y_CAGR"),
             "Vol %": x.get("volatility_1y"),
-            "Sharpe": x.get("sharpe_1y"),
-            "RSI": x.get("rsi_14"),
-            "vs 52W High": x.get("from_52w_high"),
-            "vs 200-DMA": x.get("dist_200dma"),
         }
+        if show_risk_metrics:
+            row["Sharpe"] = x.get("sharpe_1y")
+        row["vs 52W High"] = x.get("from_52w_high")
+        row["vs 200-DMA"] = x.get("dist_200dma")
         if show_valuation:
             row["P/E"] = x.get("pe")
         row["BI Stance"] = x.get("bi_stance", "Neutral")
@@ -308,11 +300,9 @@ def render_heatmap(items, show_valuation=True):
             return "background-color: rgba(239, 68, 68, 0.12); color: #FEE2E2;"
         return ""
 
-    fmt_map = {c: "{:+.2f}%" for c in ret_cols} | {
-        "Vol %": "{:.1f}%",
-        "Sharpe": "{:.2f}",
-        "RSI": "{:.1f}",
-    }
+    fmt_map = {c: "{:+.2f}%" for c in ret_cols} | {"Vol %": "{:.1f}%"}
+    if show_risk_metrics:
+        fmt_map["Sharpe"] = "{:.2f}"
     if show_valuation:
         fmt_map["P/E"] = "{:.1f}"
 
@@ -322,21 +312,21 @@ def render_heatmap(items, show_valuation=True):
 
 # --- MAIN TABS ---
 tab1, tab2, tab3, tab4 = st.tabs([
-    "📊 Equity, MF & Volatility",
-    "🧭 Sector & Return Charts",
+    "📊 Equity, MF and Volatility",
+    "🧭 Sector and Return Charts",
     "📰 Top 10 Verified News",
-    "🌍 Global, FX & Commodities",
+    "🌍 Global, FX and Commodities",
 ])
 
 with tab1:
-    st.markdown("#### Indian Broad Equity, BSE SENSEX & MF Category Benchmarks")
-    render_heatmap(markets.get("indian_equity", []), show_valuation=True)
+    st.markdown("#### Indian Broad Equity, BSE SENSEX and MF Benchmarks")
+    render_heatmap(markets.get("indian_equity", []), show_valuation=True, show_risk_metrics=True)
 
-    st.markdown("#### Volatility & Fear Indices (Dedicated Group)")
-    render_heatmap(markets.get("volatility_indices", []), show_valuation=False)
+    st.markdown("#### Volatility and Fear Indices")
+    render_heatmap(markets.get("volatility_indices", []), show_valuation=False, show_risk_metrics=False)
 
     st.markdown("#### Indian Sectoral Benchmarks")
-    render_heatmap(markets.get("indian_sectors", []), show_valuation=True)
+    render_heatmap(markets.get("indian_sectors", []), show_valuation=True, show_risk_metrics=True)
 
 with tab2:
     st.markdown("#### Sector Trend vs. 3M Momentum Quadrant")
@@ -361,7 +351,7 @@ with tab2:
             fig.update_traces(textposition="top center")
             st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("#### 1Y Return vs. 1Y Volatility Comparison (Indian Equity & Sectors)")
+    st.markdown("#### 1Y Return Comparison Across Indian Equity and Sectors")
     combined_eq = markets.get("indian_equity", []) + markets.get("indian_sectors", [])
     if combined_eq:
         cdf = pd.DataFrame(combined_eq).dropna(subset=["1Y", "volatility_1y"])
@@ -406,8 +396,8 @@ with tab3:
         )
 
 with tab4:
-    st.markdown("#### Global Markets (New York, London, Paris, Tokyo & More)")
-    render_heatmap(markets.get("global_indices", []), show_valuation=True)
+    st.markdown("#### Global Markets")
+    render_heatmap(markets.get("global_indices", []), show_valuation=True, show_risk_metrics=True)
 
-    st.markdown("#### Gold (INR & USD), Currencies (USD, EUR, GBP, JPY), Commodities & Yields")
-    render_heatmap(markets.get("macro_commodities_fx", []), show_valuation=False)
+    st.markdown("#### Gold, Currencies, Commodities and Yields")
+    render_heatmap(markets.get("macro_commodities_fx", []), show_valuation=False, show_risk_metrics=True)
