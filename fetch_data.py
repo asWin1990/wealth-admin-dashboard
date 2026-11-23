@@ -71,6 +71,19 @@ def calc_pct_return(series, trading_days):
     return round(((end / start) - 1) * 100, 2)
 
 
+def calc_rsi_14(series):
+    if series is None or len(series) < 15:
+        return None
+    delta = series.diff()
+    gain = delta.clip(lower=0).rolling(14).mean()
+    loss = (-delta.clip(upper=0)).rolling(14).mean()
+    rs = gain / loss.replace(0, np.nan)
+    latest = rs.iloc[-1]
+    if pd.isna(latest):
+        return None
+    return round(float(100 - (100 / (1 + latest))), 1)
+
+
 def calc_yoy_history(close, start_year=1995):
     if close is None or close.empty:
         return {}
@@ -134,7 +147,7 @@ def compute_vol_stance(price, dist_200dma, r_1d, r_1w):
     return "Normal Regime", "Balanced Vol"
 
 
-def compute_bi_stance(pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, vol_1y, is_equity=True):
+def compute_bi_stance(pe, dist_200dma, from_52w_high, rsi_14, r_1m, r_3m, r_1y, sharpe, vol_1y, is_equity=True):
     score = 0.0
     drivers = []
 
@@ -165,6 +178,14 @@ def compute_bi_stance(pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, 
         elif dist_200dma < -15:
             score -= 1.0
             drivers.append("< 200-DMA")
+
+    if rsi_14 is not None:
+        if rsi_14 > 75:
+            score -= 0.5
+            drivers.append("Overbought RSI")
+        elif rsi_14 < 30:
+            score += 0.5
+            drivers.append("Oversold RSI")
 
     if from_52w_high is not None and from_52w_high < -20 and (r_1m is None or r_1m <= 0):
         score -= 0.75
@@ -231,11 +252,13 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mod
     high_52w = float(recent_1y.max())
     from_52w_high = round(((current_price / high_52w) - 1) * 100, 2) if high_52w > 0 else None
 
+    rsi_14 = None if mode == "vol" else calc_rsi_14(close)
+
     if mode == "vol":
         stance_label, stance_driver = compute_vol_stance(current_price, dist_200dma, r_1d, r_1w)
     else:
         stance_label, stance_driver = compute_bi_stance(
-            pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, ann_vol, is_equity=(mode == "equity")
+            pe, dist_200dma, from_52w_high, rsi_14, r_1m, r_3m, r_1y, sharpe, ann_vol, is_equity=(mode == "equity")
         )
 
     out = {
@@ -252,6 +275,7 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mod
         "5Y_CAGR": r_5y_cagr,
         "volatility_1y": ann_vol,
         "sharpe_1y": sharpe,
+        "rsi_14": rsi_14,
         "from_52w_high": from_52w_high,
         "dist_200dma": dist_200dma,
         "pe": pe if mode == "equity" else None,
