@@ -85,6 +85,18 @@ st.markdown(
         background: rgba(239, 68, 68, 0.18); border: 1px solid rgba(248, 113, 113, 0.5);
         color: #F87171; font-size: 10.5px; font-weight: 700; margin-left: 6px;
     }
+    .tbl-header-row {
+        display: flex; align-items: baseline; justify-content: space-between;
+        margin-top: 0.65rem; margin-bottom: 0.35rem; gap: 10px; flex-wrap: wrap;
+    }
+    .tbl-title {
+        color: #E2C06D; font-weight: 600; font-size: 16px; letter-spacing: 0.25px;
+    }
+    .tbl-asof {
+        font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #94A3B8;
+        background: rgba(30, 41, 59, 0.65); border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 2px 8px; border-radius: 5px;
+    }
 
     .kpi-card {
         background: rgba(17, 25, 40, 0.72);
@@ -144,6 +156,25 @@ def parse_snapshot_dt(snap):
         mtime = os.path.getmtime(SNAPSHOT_PATH)
         return datetime.fromtimestamp(mtime, tz=IST)
     return None
+
+
+def format_as_of_stamp(snap):
+    dt = parse_snapshot_dt(snap)
+    if dt:
+        return f"as of {dt.strftime('%d %b')} (at {dt.strftime('%H:%M')})"
+    return "as of —"
+
+
+def render_section_heading(title, as_of_text):
+    st.markdown(
+        f"""
+        <div class="tbl-header-row">
+            <span class="tbl-title">{title}</span>
+            <span class="tbl-asof">{as_of_text}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def get_freshness_info(snap, stale_hours=DEFAULT_STALE_HOURS):
@@ -216,7 +247,6 @@ def load_snapshot():
     return None
 
 
-# --- SESSION STATE FOR AUTO-FETCH ---
 if "auto_fetch_enabled" not in st.session_state:
     st.session_state["auto_fetch_enabled"] = True
 if "stale_threshold_hours" not in st.session_state:
@@ -226,7 +256,6 @@ if "last_auto_check_ts" not in st.session_state:
 
 snapshot = load_snapshot()
 
-# --- SIDEBAR CONTROLS ---
 with st.sidebar:
     st.markdown("### ⚡ AURA BI AGENT")
     st.caption("Autonomous Market & Valuation Intelligence")
@@ -265,7 +294,6 @@ with st.sidebar:
     st.divider()
     st.caption("Scheduled: 8:30 AM & 4:30 PM IST (Mon–Fri) + Auto-Fetch")
 
-# --- AUTOMATIC FETCH TRIGGER WHEN SNAPSHOT IS MISSING OR STALE ---
 now_epoch = time.time()
 if st.session_state["auto_fetch_enabled"] and (now_epoch - st.session_state["last_auto_check_ts"] > 120):
     st.session_state["last_auto_check_ts"] = now_epoch
@@ -284,6 +312,7 @@ macro = snapshot.get("macro_manual", {})
 markets = snapshot.get("markets", {})
 amfi_debt_schemes = snapshot.get("amfi_debt_schemes", [])
 last_fetched_str = snapshot.get("updated_at_ist", "Unknown")
+as_of_stamp = format_as_of_stamp(snapshot)
 fresh_tag, fresh_detail, fresh_css = get_freshness_info(snapshot, st.session_state["stale_threshold_hours"])
 
 
@@ -541,15 +570,15 @@ with tab1:
         horizontal=True,
     )
     if view_slice in ["All", "Broad Equity & MF"]:
-        st.markdown("#### Indian Broad Equity, BSE SENSEX & MF Benchmarks")
+        render_section_heading("Indian Broad Equity, BSE SENSEX & MF Benchmarks", as_of_stamp)
         render_heatmap(markets.get("indian_equity", []), show_valuation=True, show_risk_metrics=True)
 
     if view_slice in ["All", "Volatility"]:
-        st.markdown("#### Volatility & Fear Indices")
+        render_section_heading("Volatility & Fear Indices", as_of_stamp)
         render_heatmap(markets.get("volatility_indices", []), show_valuation=False, show_risk_metrics=False)
 
     if view_slice in ["All", "Sectors"]:
-        st.markdown("#### Indian Sectoral Benchmarks")
+        render_section_heading("Indian Sectoral Benchmarks", as_of_stamp)
         render_heatmap(markets.get("indian_sectors", []), show_valuation=True, show_risk_metrics=True)
 
 with tab2:
@@ -560,7 +589,7 @@ with tab2:
     )
 
     if chart_mode == "YoY Returns Heatmap (Since 1995)":
-        st.markdown("#### Year-on-Year Returns Heatmap (1995–Present)")
+        render_section_heading("Year-on-Year Returns Heatmap (1995–Present)", as_of_stamp)
         yoy_candidates = [x for x in (markets.get("indian_equity", []) + markets.get("global_indices", [])) if x.get("yoy_returns")]
         if yoy_candidates:
             selected_indices = st.multiselect(
@@ -621,7 +650,7 @@ with tab2:
             st.info("Click **🔄 Refresh Live Data & AI Now** once to pull historical YoY series since 1995.")
 
     else:
-        st.markdown("#### Sectoral Performance Breakup — Leader vs. Laggard Heatmap")
+        render_section_heading("Sectoral Performance Breakup — Leader vs. Laggard Heatmap", as_of_stamp)
         sectors = markets.get("indian_sectors", [])
         if sectors:
             nifty_item = find_item("indian_equity", "Nifty 50")
@@ -737,7 +766,7 @@ with tab2:
                 st.plotly_chart(fig, use_container_width=True)
 
 with tab3:
-    st.markdown("#### News Headlines")
+    render_section_heading("News Headlines", as_of_stamp)
     filter_reg = st.radio("Filter Region", ["ALL", "INDIA", "GLOBAL"], horizontal=True)
     news_list = snapshot.get("verified_news", [])
     if not news_list:
@@ -762,14 +791,14 @@ with tab3:
         )
 
 with tab4:
-    st.markdown("#### Global Markets")
+    render_section_heading("Global Markets", as_of_stamp)
     render_heatmap(markets.get("global_indices", []), show_valuation=True, show_risk_metrics=True)
 
-    st.markdown("#### Gold, Currencies, Commodities & Yields")
+    render_section_heading("Gold, Currencies, Commodities & Yields", as_of_stamp)
     render_heatmap(markets.get("macro_commodities_fx", []), show_valuation=False, show_risk_metrics=True)
 
 with tab5:
-    st.markdown("#### Indian Debt Yields & Sovereign Curve")
+    render_section_heading("Indian Debt Yields & Sovereign Curve", as_of_stamp)
     repo = float(macro.get("rbi_repo_rate", 6.50))
     tbill_3m = float(macro.get("india_3m_tbill_approx", 6.55))
     gsec_1y = float(macro.get("india_1y_gsec_approx", 6.65))
@@ -805,7 +834,7 @@ with tab5:
         st.plotly_chart(curve_fig, use_container_width=True)
 
     with c_right:
-        st.markdown("##### Debt Category Duration & Role")
+        render_section_heading("Debt Category Duration & Role", as_of_stamp)
         domestic_matrix = pd.DataFrame([
             {"Category": "Liquid / Overnight", "Duration": "<91d", "Rate Risk": "Minimal", "Role": "Liquidity & cash"},
             {"Category": "Money Market / Low Dur.", "Duration": "6m–1.5y", "Rate Risk": "Low", "Role": "Short accrual"},
@@ -815,7 +844,7 @@ with tab5:
         ])
         st.dataframe(domestic_matrix, use_container_width=True, hide_index=True)
 
-    st.markdown("#### AMFI Indian Debt & Liquid Mutual Fund NAVs")
+    render_section_heading("AMFI Indian Debt & Liquid Mutual Fund NAVs", as_of_stamp)
     if amfi_debt_schemes:
         adf = pd.DataFrame(amfi_debt_schemes).rename(columns={
             "scheme_name": "AMFI Scheme (Growth)",
