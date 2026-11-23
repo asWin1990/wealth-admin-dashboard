@@ -39,9 +39,8 @@ st.markdown(
         background: #090E1A !important;
         border-right: 1px solid rgba(255, 255, 255, 0.06);
     }
-    .block-container { padding-top: 2.2rem; max-width: 1520px; }
+    .block-container { padding-top: 2.2rem; max-width: 1560px; }
 
-    /* Ensure expander text wraps cleanly without horizontal clipping */
     div[data-testid="stExpander"] p,
     div[data-testid="stExpander"] li,
     div[data-testid="stExpander"] code {
@@ -253,7 +252,7 @@ with st.expander("📘 AURA AI guide — Jargon Glossary, CAGR Methodology and B
             * **vs 52W High:** Percentage gap below the 52-week peak (`-15%` means 15% below the 1-year high).
             * **vs 200-DMA:** Percentage distance above or below the 200-day moving average trend line.
             * **P/E:** Trailing Price-to-Earnings multiple (sourced directly or via liquid ETF proxies for equity benchmarks).
-            * **BI Stance:** Multi-factor judgement combining valuation multiples, 200-DMA and 52W High positioning, 1M/3M/1Y momentum alignment, and Sharpe/volatility; volatility indices use regime and spike logic instead.
+            * **BI Stance & Driver:** Concise action tag (`Strong Buy`, `Accumulate`, `Hold`, `Trim`, `Avoid`) paired with its primary valuation, trend, momentum, or volatility driver.
             """
         )
 
@@ -295,7 +294,8 @@ def render_heatmap(items, show_valuation=True, show_risk_metrics=True):
         row["vs 200-DMA"] = x.get("dist_200dma")
         if show_valuation:
             row["P/E"] = x.get("pe")
-        row["BI Stance"] = x.get("bi_stance", "Neutral")
+        row["BI Stance"] = x.get("bi_stance", "Hold")
+        row["Driver"] = x.get("bi_driver", "Balanced")
         rows.append(row)
 
     df = pd.DataFrame(rows)
@@ -326,7 +326,9 @@ def render_heatmap(items, show_valuation=True, show_risk_metrics=True):
         use_container_width=True,
         hide_index=True,
         column_config={
-            "BI Stance": st.column_config.TextColumn("BI Stance", width="large"),
+            "Benchmark": st.column_config.TextColumn("Benchmark", width="medium"),
+            "BI Stance": st.column_config.TextColumn("BI Stance", width="small"),
+            "Driver": st.column_config.TextColumn("Driver", width="medium"),
         },
     )
 
@@ -351,7 +353,6 @@ with tab1:
     render_heatmap(markets.get("indian_sectors", []), show_valuation=True, show_risk_metrics=True)
 
 with tab2:
-    # 1. Year-on-Year Returns since 1995
     st.markdown("#### Year-on-Year Calendar Returns Since 1995")
     yoy_candidates = [x for x in (markets.get("indian_equity", []) + markets.get("global_indices", [])) if x.get("yoy_returns")]
     if yoy_candidates:
@@ -382,7 +383,6 @@ with tab2:
 
     st.divider()
 
-    # 2. Sectoral Performance Breakup: Leader vs. Laggard Matrix
     st.markdown("#### Sectoral Performance Breakup — Leader vs. Laggard Matrix")
     sectors = markets.get("indian_sectors", [])
     if sectors:
@@ -405,7 +405,7 @@ with tab2:
             elif rel_3m is not None and rel_3m <= -3.0:
                 bucket = "Laggard"
             else:
-                bucket = "In-Line / Transition"
+                bucket = "In-Line"
 
             matrix_rows.append({
                 "Sector": x["name"],
@@ -416,8 +416,9 @@ with tab2:
                 "vs Nifty 1Y": rel_1y,
                 "Vol %": x.get("volatility_1y"),
                 "P/E": x.get("pe"),
-                "Leader / Laggard": bucket,
-                "BI Stance": x.get("bi_stance", "Neutral"),
+                "Group": bucket,
+                "BI Stance": x.get("bi_stance", "Hold"),
+                "Driver": x.get("bi_driver", "Balanced"),
             })
 
         mdf = pd.DataFrame(matrix_rows).sort_values("vs Nifty 3M", ascending=False, na_position="last")
@@ -435,7 +436,6 @@ with tab2:
             hide_index=True,
         )
 
-        # Sector Quadrant Chart
         qdf = sdf.dropna(subset=["dist_200dma", "3M"])
         if not qdf.empty:
             fig = px.scatter(
@@ -488,32 +488,66 @@ with tab4:
     render_heatmap(markets.get("macro_commodities_fx", []), show_valuation=False, show_risk_metrics=True)
 
 with tab5:
-    st.markdown("#### Debt & Liquid Mutual Fund Comparison (Duration, Credit & Return Profile)")
+    st.markdown("#### Debt & Liquid Mutual Fund Comparison")
     repo = macro.get("rbi_repo_rate", 6.50)
     gsec = macro.get("india_10y_gsec_approx", 6.85)
     spread = round(gsec - repo, 2)
 
     m1, m2, m3 = st.columns(3)
-    m1.metric("RBI Repo Rate (Policy Anchor)", f"{repo:.2f}%")
-    m2.metric("India 10Y G-Sec (Approx)", f"{gsec:.2f}%")
+    m1.metric("RBI Repo Rate", f"{repo:.2f}%")
+    m2.metric("India 10Y G-Sec", f"{gsec:.2f}%")
     m3.metric("10Y vs. Repo Spread", f"{spread:+.2f}%")
 
+    st.markdown("##### Domestic Rate & Duration Positioning Matrix")
+    domestic_matrix = pd.DataFrame([
+        {
+            "MF Category": "Liquid / Overnight",
+            "Duration Bucket": "Ultra-Short (<91d)",
+            "Credit Quality": "Sovereign / AAA",
+            "Rate Sensitivity": "Minimal",
+            "Primary Role": "Cash parking & emergency liquidity",
+        },
+        {
+            "MF Category": "Short / Low Duration",
+            "Duration Bucket": "Short (6m–2y)",
+            "Credit Quality": "AAA / Sovereign",
+            "Rate Sensitivity": "Low–Moderate",
+            "Primary Role": "Accrual stability with lower volatility",
+        },
+        {
+            "MF Category": "Corporate Bond / Banking & PSU",
+            "Duration Bucket": "Short–Medium (2–4y)",
+            "Credit Quality": "High-Grade (AAA)",
+            "Rate Sensitivity": "Moderate",
+            "Primary Role": "Spread pickup over sovereign bills",
+        },
+        {
+            "MF Category": "Gilt / Long Duration",
+            "Duration Bucket": "Medium–Long (7–10y+)",
+            "Credit Quality": "Sovereign",
+            "Rate Sensitivity": "High",
+            "Primary Role": "Capital gains when yields fall; higher MTM swing",
+        },
+    ])
+    st.dataframe(domestic_matrix, use_container_width=True, hide_index=True)
+
+    st.markdown("##### Fixed-Income & Sovereign Yield Proxies (Live Series)")
     if debt_liquid:
         ddf = pd.DataFrame(debt_liquid)
         display_cols = [
             "name", "bucket", "duration_profile", "credit_profile",
-            "1W", "1M", "3M", "1Y", "3Y_CAGR", "volatility_1y", "sharpe_1y", "bi_stance"
+            "1W", "1M", "3M", "1Y", "3Y_CAGR", "volatility_1y", "bi_stance", "bi_driver"
         ]
         avail = [c for c in display_cols if c in ddf.columns]
         view_df = ddf[avail].rename(columns={
-            "name": "Debt / Liquid Proxy",
+            "name": "Proxy Benchmark",
             "bucket": "Category",
-            "duration_profile": "Duration Profile",
-            "credit_profile": "Credit / Sovereign",
+            "duration_profile": "Duration",
+            "credit_profile": "Credit",
             "3Y_CAGR": "3Y CAGR",
             "volatility_1y": "Vol %",
-            "sharpe_1y": "Sharpe",
             "bi_stance": "BI Stance",
+            "bi_driver": "Driver",
         })
         st.dataframe(
             view_df.style.format({
@@ -523,14 +557,9 @@ with tab5:
                 "1Y": "{:+.2f}%",
                 "3Y CAGR": "{:+.2f}%",
                 "Vol %": "{:.2f}%",
-                "Sharpe": "{:.2f}",
             }, na_rep="—"),
             use_container_width=True,
             hide_index=True,
         )
-        st.caption(
-            "Apple-to-Apple Debt Note: Liquid and money-market funds prioritize capital preservation and accrual with minimal duration risk; "
-            "gilt/longer-duration funds carry higher rate/mark-to-market sensitivity when bond yields move."
-        )
     else:
-        st.info("Click **🔄 Refresh Live Data & AI** once to load Debt & Liquid proxy metrics.")
+        st.info("Click **🔄 Refresh Live Data & AI** once to pull fixed-income proxy series.")
