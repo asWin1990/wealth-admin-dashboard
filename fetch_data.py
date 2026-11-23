@@ -9,10 +9,11 @@ from datetime import datetime, timezone, timedelta
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
-# ETF proxies used to fetch real P/E multiples where raw indices return None
 VALUATION_PROXIES = {
     "^NSEI": ["NIFTYBEES.NS"],
+    "^BSESN": ["SENSEXADD.NS", "NIFTYBEES.NS"],
     "^NSMIDCP": ["JUNIORBEES.NS"],
+    "^NSEMDCP150": ["MID150BEES.NS"],
     "^CRSLDX": ["MONIFTY500.NS"],
     "^NSEBANK": ["BANKBEES.NS"],
     "^CNXPSUBANK": ["PSUBNKBEES.NS"],
@@ -24,10 +25,13 @@ VALUATION_PROXIES = {
     "^CNXMETAL": ["METALIETF.NS"],
     "^CNXENERGY": ["OILIETF.NS"],
     "^GSPC": ["SPY"],
+    "^DJI": ["DIA"],
     "^NDX": ["QQQ"],
-    "^HSI": ["EWH"],
+    "^FTSE": ["EWU"],
+    "^FCHI": ["EWQ"],
     "^N225": ["EWJ"],
     "^GDAXI": ["EWG"],
+    "^HSI": ["EWH"],
 }
 
 
@@ -64,21 +68,25 @@ def get_currency_symbol(name, ticker):
     return ""
 
 
-def fetch_valuation_multiples(ticker):
-    """Fetch P/E from ticker, falling back to liquid ETF proxies."""
-    candidates = [ticker] + VALUATION_PROXIES.get(ticker, [])
-    for sym in candidates:
+def fetch_pe_ratio(ticker):
+    for sym in [ticker] + VALUATION_PROXIES.get(ticker, []):
         try:
-            info = yf.Ticker(sym).info or {}
-            pe = info.get("trailingPE")
-            if pe:
-                return round(float(pe), 2), None
+            pe = (yf.Ticker(sym).info or {}).get("trailingPE")
+            if pe and float(pe) > 0:
+                return round(float(pe), 2)
         except Exception:
             continue
-    return None, None
+    return None
 
 
-def compute_bi_stance(pe, pb, dist_200dma, r_1m, r_3m, sharpe):
+def compute_bi_stance(pe, dist_200dma, r_1m, r_3m, sharpe, is_vol=False):
+    if is_vol:
+        if dist_200dma is not None and dist_200dma > 25:
+            return "Elevated Fear"
+        elif dist_200dma is not None and dist_200dma < -15:
+            return "Complacent / Low Vol"
+        return "Normal Regime"
+
     score = 0
     if pe is not None:
         if pe < 18:
@@ -123,7 +131,7 @@ def compute_bi_stance(pe, pb, dist_200dma, r_1m, r_3m, sharpe):
     return "Avoid / Weak"
 
 
-def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, pb=None, currency=""):
+def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", is_vol=False):
     current_price = round(float(close.iloc[-1]), 2)
 
     r_1d = calc_pct_return(close, 1)
@@ -145,18 +153,16 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, pb=None, currenc
     dma_200 = float(close.tail(200).mean()) if len(close) >= 200 else None
     dist_200dma = round(((current_price / dma_200) - 1) * 100, 2) if dma_200 else None
 
-    # 14-day RSI
     delta = close.diff()
     gain = delta.clip(lower=0).rolling(14).mean()
     loss = (-delta.clip(upper=0)).rolling(14).mean()
     rs = gain / loss.replace(0, np.nan)
     rsi_14 = round(float(100 - (100 / (1 + rs.iloc[-1]))), 1) if len(close) >= 15 and not pd.isna(rs.iloc[-1]) else None
 
-    # Distance from 52-Week High
     high_52w = float(recent_1y.max())
     from_52w_high = round(((current_price / high_52w) - 1) * 100, 2) if high_52w > 0 else None
 
-    bi_stance = compute_bi_stance(pe, pb, dist_200dma, r_1m, r_3m, sharpe)
+    bi_stance = compute_bi_stance(pe, dist_200dma, r_1m, r_3m, sharpe, is_vol=is_vol)
 
     return {
         "name": name,
@@ -175,8 +181,7 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, pb=None, currenc
         "dist_200dma": dist_200dma,
         "rsi_14": rsi_14,
         "from_52w_high": from_52w_high,
-        "pe": pe,
-        "pb": pb,
+        "pe": None if is_vol else pe,
         "bi_stance": bi_stance,
     }
 
@@ -188,11 +193,12 @@ def analyze_ticker(name, ticker, category, rf_rate=0.068):
             return None, None
 
         close = hist["Close"].dropna()
-        is_equity = category in ["indian_equity", "indian_sectors", "global_indices"] and "VIX" not in name
-        pe_ratio, pb_ratio = fetch_valuation_multiples(ticker) if is_equity else (None, None)
+        is_vol = category == "volatility_indices"
+        is_equity = category in ["indian_equity", "indian_sectors", "global_indices"]
+        pe_ratio = fetch_pe_ratio(ticker) if is_equity else None
         currency = get_currency_symbol(name, ticker)
 
-        return analyze_series(name, ticker, close, rf_rate, pe_ratio, pb_ratio, currency), close
+        return analyze_series(name, ticker, close, rf_rate, pe_ratio, currency, is_vol=is_vol), close
     except Exception as e:
         print(f"Error fetching {name} ({ticker}): {e}")
         return None, None
@@ -234,15 +240,12 @@ def run_fetch():
     for category, tickers in cfg["benchmarks"].items():
         snapshot["markets"][category] = []
         for name, ticker in tickers.items():
-            if ticker == "GOLDBEES.NS":
-                continue
             print(f"Fetching {name} ({ticker})...")
             data, close = analyze_ticker(name, ticker, category, rf_rate)
             if data:
                 snapshot["markets"][category].append(data)
                 series_cache[ticker] = close
 
-    # Live Gold (INR / 10g)
     if "GC=F" in series_cache and "INR=X" in series_cache:
         gold_usd = series_cache["GC=F"].tz_localize(None)
         usdinr = series_cache["INR=X"].tz_localize(None)
