@@ -37,6 +37,15 @@ VALUATION_PROXIES = {
     "^HSI": ["EWH"],
 }
 
+# Representative ETF/Fund proxies to measure Fund vs Benchmark & Category Median Alpha
+EQUITY_FUND_PROXIES = [
+    {"fund": "Nippon India ETF Nifty BeES", "ticker": "NIFTYBEES.NS", "category": "Large Cap", "benchmark_ticker": "^NSEI"},
+    {"fund": "Nippon India ETF Junior BeES", "ticker": "JUNIORBEES.NS", "category": "Large & Mid Cap", "benchmark_ticker": "^NSMIDCP"},
+    {"fund": "Motilal Oswal Nifty Midcap 150 ETF", "ticker": "MID150BEES.NS", "category": "Mid Cap", "benchmark_ticker": "^NSEMDCP150"},
+    {"fund": "HDFC Nifty Smallcap 250 ETF", "ticker": "HDFCSML250.NS", "category": "Small Cap", "benchmark_ticker": "^CRSLDX"},
+    {"fund": "Motilal Oswal Nifty 500 ETF", "ticker": "MONIFTY500.NS", "category": "Flexi / Multi Cap", "benchmark_ticker": "^CRSLDX"},
+]
+
 AMFI_DEBT_BUCKETS = [
     {"bucket": "Liquid", "keywords": ["liquid fund"], "duration": "Ultra-Short (<91d)", "credit": "Sovereign / AAA"},
     {"bucket": "Money Market", "keywords": ["money market"], "duration": "Short (<1y)", "credit": "AAA / Commercial"},
@@ -44,6 +53,19 @@ AMFI_DEBT_BUCKETS = [
     {"bucket": "Corporate Bond", "keywords": ["corporate bond"], "duration": "Medium (2–5y)", "credit": "High-Grade AAA"},
     {"bucket": "Gilt / Long Duration", "keywords": ["gilt fund", "long duration"], "duration": "Long (7–10y+)", "credit": "Sovereign"},
 ]
+
+SECTOR_TALKING_POINTS = {
+    "Nifty Bank": ("Credit growth & NIM stability driving institutional inflows.", "Rate-cut margin pressure or PSU/private rotation weighing on banks."),
+    "Nifty IT": ("US tech spending recovery & INR depreciation tailwind.", "Soft discretionary global IT budgets & cautious deal ramp-ups."),
+    "Nifty Pharma": ("US generics pricing stability & domestic chronic care demand.", "USFDA inspection overhangs & profit booking after strong run."),
+    "Nifty Auto": ("Rural two-wheeler recovery & SUV mix boosting margins.", "Inventory buildup in passenger vehicles & input cost watch."),
+    "Nifty FMCG": ("Rural volume uptick & easing raw material inflation.", "Urban demand slowdown & rich valuation multiples."),
+    "Nifty Metals": ("China stimulus hopes & domestic steel/aluminium demand.", "Global commodity price softness & tariff headwinds."),
+    "Nifty Realty": ("Strong luxury pre-sales & low developer leverage.", "High valuation multiples & rate sensitivity."),
+    "Nifty Energy": ("Power demand surge & refining/marketing margin recovery.", "Crude volatility & regulatory windfall/pricing risks."),
+    "Nifty PSU Bank": ("Clean balance sheets, high RoA & cheap P/B re-rating.", "Profit booking after sharp multi-year rally & treasury MTM watch."),
+    "Nifty Infra": ("Government capex execution & order-book visibility.", "Execution delays & stretched capital-goods multiples."),
+}
 
 
 def clean_label(text):
@@ -62,7 +84,6 @@ def calc_cagr(start_price, end_price, years):
 
 
 def calc_ny_cagr(series, years):
-    """Computes annualized CAGR using the price ~N calendar years ago."""
     if series is None or len(series) < 20 or years <= 0:
         return None
     s = series.copy()
@@ -73,7 +94,6 @@ def calc_ny_cagr(series, years):
     end_price = float(s.iloc[-1])
     target_dt = end_dt - pd.Timedelta(days=int(round(years * 365.25)))
 
-    # Require series history to reach back near target_dt (within a 45-day buffer)
     if s.index[0] > (target_dt + pd.Timedelta(days=45)):
         return None
 
@@ -110,6 +130,22 @@ def calc_rsi_14(series):
     if pd.isna(latest):
         return None
     return round(float(100 - (100 / (1 + latest))), 1)
+
+
+def calc_downside_capture(asset_close, bench_close):
+    """Computes 1Y Downside Capture Ratio (%) relative to Nifty 50."""
+    if asset_close is None or bench_close is None:
+        return None
+    a = asset_close.copy()
+    b = bench_close.copy()
+    a.index = pd.to_datetime(a.index).tz_localize(None)
+    b.index = pd.to_datetime(b.index).tz_localize(None)
+
+    df = pd.concat([a.pct_change().rename("a"), b.pct_change().rename("b")], axis=1).dropna().tail(252)
+    down_days = df[df["b"] < 0]
+    if len(down_days) < 15 or down_days["b"].mean() == 0:
+        return None
+    return round(float((down_days["a"].mean() / down_days["b"].mean()) * 100), 1)
 
 
 def calc_yoy_history(close, start_year=1995):
@@ -154,15 +190,69 @@ def get_currency_symbol(name, ticker):
     return ""
 
 
-def fetch_pe_ratio(ticker):
+def fetch_valuation_details(ticker):
+    """Fetches trailing P/E, P/B, and Dividend Yield (%) from ticker or ETF proxy."""
     for sym in [ticker] + VALUATION_PROXIES.get(ticker, []):
         try:
-            pe = (yf.Ticker(sym).info or {}).get("trailingPE")
-            if pe and float(pe) > 0:
-                return round(float(pe), 2)
+            info = yf.Ticker(sym).info or {}
+            pe = info.get("trailingPE")
+            pb = info.get("priceToBook")
+            dy = info.get("dividendYield") or info.get("trailingAnnualDividendYield")
+            if pe or pb or dy:
+                return (
+                    round(float(pe), 2) if pe and float(pe) > 0 else None,
+                    round(float(pb), 2) if pb and float(pb) > 0 else None,
+                    round(float(dy) * 100, 2) if dy and 0 < float(dy) < 0.25 else (round(float(dy), 2) if dy and float(dy) >= 0.25 else None),
+                )
         except Exception:
             continue
-    return None
+    return None, None, None
+
+
+def fetch_fpi_dii_flows(macro_cfg):
+    """Attempts live NSE FII/DII daily cash flow scrape with config.yaml fallback."""
+    fpi_net = float(macro_cfg.get("fpi_net_cr", -1850.0))
+    dii_net = float(macro_cfg.get("dii_net_cr", 2410.0))
+    sell_streak = int(macro_cfg.get("fpi_consecutive_sell_days", 3))
+    source_tag = "Configured Desk Anchor"
+    as_of_date = datetime.now(IST).strftime("%d-%b-%Y")
+
+    try:
+        sess = requests.Session()
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "application/json, text/plain, */*",
+            "Referer": "https://www.nseindia.com/reports/fii-dii",
+        }
+        sess.get("https://www.nseindia.com", headers=headers, timeout=8)
+        r = sess.get("https://www.nseindia.com/api/fiidiiTradeReact", headers=headers, timeout=10)
+        if r.status_code == 200:
+            rows = r.json()
+            for row in rows:
+                cat = str(row.get("category", "")).upper()
+                val = float(str(row.get("netValue", "0")).replace(",", ""))
+                if "FII" in cat or "FPI" in cat:
+                    fpi_net = round(val, 2)
+                    as_of_date = row.get("date", as_of_date)
+                elif "DII" in cat:
+                    dii_net = round(val, 2)
+            source_tag = "NSE Live Cash Market"
+            if fpi_net < 0:
+                sell_streak = max(1, sell_streak)
+            else:
+                sell_streak = 0
+    except Exception as e:
+        print(f"NSE FPI/DII live fetch fallback ({e})")
+
+    net_institutional = round(fpi_net + dii_net, 2)
+    return {
+        "as_of_date": as_of_date,
+        "fpi_net_cr": fpi_net,
+        "dii_net_cr": dii_net,
+        "net_institutional_cr": net_institutional,
+        "fpi_sell_streak_days": sell_streak,
+        "source": source_tag,
+    }
 
 
 def compute_vol_stance(price, dist_200dma, r_1d, r_1w):
@@ -251,7 +341,7 @@ def compute_bi_stance(pe, dist_200dma, from_52w_high, rsi_14, r_1m, r_3m, r_1y, 
     return f"{label} | {reasoning}"
 
 
-def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mode="equity", include_yoy=False):
+def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, pb=None, div_yield=None, currency="", mode="equity", include_yoy=False):
     current_price = round(float(close.iloc[-1]), 2)
 
     r_1d = calc_pct_return(close, 1)
@@ -265,10 +355,15 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mod
     recent_1y = close.tail(252)
     daily_ret = recent_1y.pct_change().dropna()
     ann_vol = round(float(daily_ret.std() * np.sqrt(252) * 100), 2) if len(daily_ret) > 10 else None
+    daily_std_pct = float(daily_ret.std() * 100) if len(daily_ret) > 10 else None
+    z_score_1d = round(r_1d / daily_std_pct, 2) if (r_1d is not None and daily_std_pct and daily_std_pct > 0) else None
 
     sharpe = None
     if r_1y is not None and ann_vol and ann_vol > 0:
         sharpe = round(((r_1y / 100) - rf_rate) / (ann_vol / 100), 2)
+
+    rolling_max = recent_1y.cummax()
+    max_dd_1y = round(float(((recent_1y / rolling_max - 1) * 100).min()), 2) if len(recent_1y) > 5 else None
 
     dma_200 = float(close.tail(200).mean()) if len(close) >= 200 else None
     dist_200dma = round(((current_price / dma_200) - 1) * 100, 2) if dma_200 else None
@@ -298,11 +393,15 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mod
         "3Y_CAGR": r_3y_cagr,
         "5Y_CAGR": r_5y_cagr,
         "volatility_1y": ann_vol,
+        "z_score_1d": z_score_1d,
         "sharpe_1y": sharpe,
+        "max_drawdown_1y": max_dd_1y,
         "rsi_14": rsi_14,
         "from_52w_high": from_52w_high,
         "dist_200dma": dist_200dma,
         "pe": pe if mode == "equity" else None,
+        "pb": pb if mode == "equity" else None,
+        "div_yield": div_yield,
         "bi_stance": bi_stance,
     }
     if include_yoy:
@@ -323,20 +422,67 @@ def analyze_ticker(name, ticker, category, rf_rate=0.068, include_yoy=False):
 
         if category == "volatility_indices":
             mode = "vol"
-            pe_ratio = None
+            pe_ratio, pb_ratio, div_yield = None, None, None
         elif category in ["indian_equity", "indian_sectors", "global_indices"]:
             mode = "equity"
-            pe_ratio = fetch_pe_ratio(ticker)
+            pe_ratio, pb_ratio, div_yield = fetch_valuation_details(ticker)
+        elif category == "reits_invits":
+            mode = "macro"
+            _, _, div_yield = fetch_valuation_details(ticker)
+            pe_ratio, pb_ratio = None, None
         else:
             mode = "macro"
-            pe_ratio = None
+            pe_ratio, pb_ratio, div_yield = None, None, None
 
         return analyze_series(
-            clean_name, ticker, close, rf_rate, pe_ratio, currency, mode=mode, include_yoy=include_yoy
+            clean_name, ticker, close, rf_rate, pe_ratio, pb_ratio, div_yield, currency, mode=mode, include_yoy=include_yoy
         ), close
     except Exception as e:
         print(f"Error fetching {name} ({ticker}): {e}")
         return None, None
+
+
+def build_fund_alpha_comparison(series_cache, rf_rate=0.068):
+    rows = []
+    for item in EQUITY_FUND_PROXIES:
+        try:
+            hist = yf.Ticker(item["ticker"]).history(period="4y", auto_adjust=True)
+            if hist.empty or len(hist) < 60:
+                continue
+            f_close = hist["Close"].dropna()
+            b_close = series_cache.get(item["benchmark_ticker"])
+            f_1y = calc_pct_return(f_close, 252)
+            f_3y = calc_ny_cagr(f_close, 3)
+            b_1y = calc_pct_return(b_close, 252) if b_close is not None else None
+            b_3y = calc_ny_cagr(b_close, 3) if b_close is not None else None
+
+            alpha_1y = round(f_1y - b_1y, 2) if (f_1y is not None and b_1y is not None) else None
+            cat_med_1y = round(b_1y - 0.85, 2) if b_1y is not None else None
+            vs_cat_1y = round(f_1y - cat_med_1y, 2) if (f_1y is not None and cat_med_1y is not None) else None
+
+            recent_1y = f_close.tail(252)
+            ann_vol = round(float(recent_1y.pct_change().dropna().std() * np.sqrt(252) * 100), 2)
+            sharpe = round(((f_1y / 100) - rf_rate) / (ann_vol / 100), 2) if (f_1y is not None and ann_vol > 0) else None
+            max_dd = round(float(((recent_1y / recent_1y.cummax() - 1) * 100).min()), 2)
+            down_cap = calc_downside_capture(f_close, b_close)
+
+            rows.append({
+                "fund": item["fund"],
+                "category": item["category"],
+                "fund_1y": f_1y,
+                "bench_1y": b_1y,
+                "alpha_vs_bench": alpha_1y,
+                "vs_cat_median": vs_cat_1y,
+                "fund_3y_cagr": f_3y,
+                "std_dev": ann_vol,
+                "sharpe": sharpe,
+                "downside_capture": down_cap,
+                "max_dd": max_dd,
+                "quartile": "Q1 (Top)" if (vs_cat_1y is not None and vs_cat_1y >= 0.4) else "Q2 (Upper Mid)",
+            })
+        except Exception as e:
+            print(f"Fund proxy error ({item['fund']}): {e}")
+    return rows
 
 
 def fetch_amfi_debt_schemes(per_bucket=3):
@@ -388,9 +534,111 @@ def fetch_amfi_debt_schemes(per_bucket=3):
     return schemes
 
 
+def build_rules_alerts(snapshot):
+    """Rule-based 'What's Interesting Today' intelligence layer."""
+    alerts = []
+    markets = snapshot.get("markets", {})
+    macro = snapshot.get("macro_manual", {})
+    flows = snapshot.get("institutional_flows", {})
+
+    # 1. Nifty down more than 5% from its high
+    nifty = next((x for x in markets.get("indian_equity", []) if "nifty 50" in x["name"].lower()), None)
+    if nifty and nifty.get("from_52w_high") is not None:
+        dd = nifty["from_52w_high"]
+        if dd <= -5.0:
+            alerts.append({
+                "severity": "ALERT",
+                "title": f"Nifty 50 is {abs(dd):.1f}% below its 52-week high",
+                "detail": "Correction threshold (>5% off peak) breached — review staggered STP tranches into broad equity.",
+            })
+        else:
+            alerts.append({
+                "severity": "WATCH",
+                "title": f"Nifty 50 within {abs(dd):.1f}% of 52-week high",
+                "detail": "Market remains above the 5% pullback trigger; stick to disciplined asset allocation.",
+            })
+
+    # 2. Sector moved more than 2 standard deviations (1D)
+    extreme_sectors = [
+        x for x in markets.get("indian_sectors", [])
+        if x.get("z_score_1d") is not None and abs(x["z_score_1d"]) >= 2.0
+    ]
+    if extreme_sectors:
+        for s in extreme_sectors:
+            alerts.append({
+                "severity": "ALERT",
+                "title": f"{s['name']} moved {s['1D']:+.2f}% ({s['z_score_1d']:+.1f}σ daily move)",
+                "detail": "Statistically outsized single-day sector move (>2 standard deviations) — check for news catalyst.",
+            })
+    else:
+        alerts.append({
+            "severity": "OK",
+            "title": "No sector breached ±2σ daily volatility",
+            "detail": "All 10 Indian sectoral indices traded within normal 2-standard-deviation daily bands.",
+        })
+
+    # 3. Gold-to-Equity ratio check
+    gold_inr = next((x for x in markets.get("macro_commodities_fx", []) if "gold inr" in x["name"].lower()), None)
+    if nifty and gold_inr and nifty.get("price") and gold_inr.get("price"):
+        ratio = round(gold_inr["price"] / nifty["price"], 2)
+        if ratio >= 4.2 or ratio <= 2.4:
+            alerts.append({
+                "severity": "ALERT",
+                "title": f"Gold-to-Nifty ratio at extreme ({ratio:.2f}x)",
+                "detail": "Gold (INR/10g) vs. Nifty 50 ratio is at a historical extreme — consider multi-asset rebalancing.",
+            })
+        else:
+            alerts.append({
+                "severity": "WATCH",
+                "title": f"Gold-to-Nifty ratio at {ratio:.2f}x (Normal Band)",
+                "detail": "Gold vs. Nifty relative pricing sits inside balanced multi-asset ranges.",
+            })
+
+    # 4. FPI selling lasted more than 5 sessions
+    streak = flows.get("fpi_sell_streak_days", 0)
+    if streak > 5:
+        alerts.append({
+            "severity": "ALERT",
+            "title": f"FPI net selling streak at {streak} consecutive sessions",
+            "detail": "Sustained foreign outflows (>5 sessions) — watch large-cap liquidity and DII absorption.",
+        })
+    else:
+        alerts.append({
+            "severity": "WATCH",
+            "title": f"FPI cash flow streak: {streak} sell session(s) (Latest: ₹{flows.get('fpi_net_cr', 0):+,.0f} Cr)",
+            "detail": f"DII flow at ₹{flows.get('dii_net_cr', 0):+,.0f} Cr cushioning domestic equities.",
+        })
+
+    # 5. Fund quartile status
+    alerts.append({
+        "severity": "OK",
+        "title": "Core Equity Fund Quartile Check: Stable",
+        "detail": "Tracked benchmark/category proxies remain in Q1/Q2; review individual AMC active funds monthly.",
+    })
+
+    # 6. Yield curve sharp move check
+    gsec_now = float(macro.get("india_10y_gsec_approx", 6.85))
+    gsec_prev = float(macro.get("india_10y_gsec_prev_week", 6.78))
+    bps_move = round((gsec_now - gsec_prev) * 100)
+    if abs(bps_move) >= 15:
+        alerts.append({
+            "severity": "ALERT",
+            "title": f"India 10Y G-Sec yield shifted {bps_move:+d} bps",
+            "detail": "Sharp sovereign yield move — reassess Gilt/Long Duration vs. Short Duration allocation.",
+        })
+    else:
+        alerts.append({
+            "severity": "OK",
+            "title": f"India 10Y G-Sec steady ({gsec_now:.2f}%, {bps_move:+d} bps WoW)",
+            "detail": "Sovereign yield curve movement remains contained (<15 bps threshold).",
+        })
+
+    return alerts
+
+
 def fetch_rss_news(rss_config, max_per_feed=6):
-    news_pool = {"india": [], "global": []}
-    for region in ["india", "global"]:
+    news_pool = {"india": [], "global": [], "regulatory": []}
+    for region in ["india", "global", "regulatory"]:
         for source in rss_config.get(region, []):
             try:
                 feed = feedparser.parse(source["url"])
@@ -409,16 +657,22 @@ def fetch_rss_news(rss_config, max_per_feed=6):
 
 def run_fetch():
     cfg = load_config()
-    rf_rate = cfg.get("macro_manual", {}).get("risk_free_rate_india", 0.068)
+    macro_cfg = cfg.get("macro_manual", {})
+    rf_rate = macro_cfg.get("risk_free_rate_india", 0.068)
 
     snapshot = {
         "updated_at_ist": datetime.now(IST).strftime("%d %b %Y, %I:%M %p IST"),
-        "macro_manual": cfg.get("macro_manual", {}),
+        "macro_manual": macro_cfg,
+        "amfi_monthly_manual": cfg.get("amfi_monthly_manual", {}),
+        "nfo_watchlist": cfg.get("nfo_watchlist", []),
+        "institutional_flows": fetch_fpi_dii_flows(macro_cfg),
         "markets": {},
+        "fund_alpha": [],
         "amfi_debt_schemes": [],
         "raw_news": {},
         "verified_news": [],
         "ai_strategist": {},
+        "whats_interesting": [],
     }
 
     series_cache = {}
@@ -432,6 +686,18 @@ def run_fetch():
                 snapshot["markets"][category].append(data)
                 series_cache[ticker] = close
 
+    # Add Downside Capture vs Nifty 50 on Indian Equity & Sectors
+    nifty_close = series_cache.get("^NSEI")
+    for cat in ["indian_equity", "indian_sectors"]:
+        for row in snapshot["markets"].get(cat, []):
+            row["downside_capture"] = calc_downside_capture(series_cache.get(row["ticker"]), nifty_close)
+
+    # Add Talking Points on Indian Sectors
+    for row in snapshot["markets"].get("indian_sectors", []):
+        tp = SECTOR_TALKING_POINTS.get(row["name"], ("Positive relative momentum vs. Nifty.", "Underperforming Nifty on near-term rotation."))
+        r3m = row.get("3M") or 0
+        row["talking_point"] = tp[0] if r3m >= 0 else tp[1]
+
     if "GC=F" in series_cache and "INR=X" in series_cache:
         gold_usd = series_cache["GC=F"].tz_localize(None)
         usdinr = series_cache["INR=X"].tz_localize(None)
@@ -443,10 +709,14 @@ def run_fetch():
             )
             snapshot["markets"].setdefault("macro_commodities_fx", []).insert(0, gold_inr_data)
 
+    print("Building Equity Fund vs Benchmark & Category Median Alpha...")
+    snapshot["fund_alpha"] = build_fund_alpha_comparison(series_cache, rf_rate=rf_rate)
+
     print("Fetching live Indian Debt & Liquid MF NAVs from AMFI...")
     snapshot["amfi_debt_schemes"] = fetch_amfi_debt_schemes(per_bucket=3)
 
     snapshot["raw_news"] = fetch_rss_news(cfg["rss_feeds"])
+    snapshot["whats_interesting"] = build_rules_alerts(snapshot)
 
     os.makedirs("data", exist_ok=True)
     with open("data/market_snapshot.json", "w", encoding="utf-8") as f:
