@@ -35,13 +35,49 @@ VALUATION_PROXIES = {
     "^HSI": ["EWH"],
 }
 
-DEBT_AND_LIQUID_PROXIES = {
-    "Liquid MF Proxy (LiquidBeES)": {"ticker": "LIQUIDBEES.NS", "bucket": "Liquid", "duration_profile": "Ultra-Short (<91d)", "credit_profile": "Sovereign / AAA"},
-    "Money Market / T-Bill Proxy (US 3M)": {"ticker": "^IRX", "bucket": "Money Market", "duration_profile": "Short (~3M)", "credit_profile": "Sovereign"},
-    "Short / Medium Gilt & Bond Proxy (LtGiltBeES)": {"ticker": "LTGILTBEES.NS", "bucket": "Gilt / Sovereign", "duration_profile": "Medium-Long Duration", "credit_profile": "Sovereign"},
-    "US Treasury 7-10Y Bond Proxy (IEF)": {"ticker": "IEF", "bucket": "Global Sovereign Debt", "duration_profile": "Intermediate (~7.5y)", "credit_profile": "US Sovereign"},
-    "US Investment Grade Corp Proxy (LQD)": {"ticker": "LQD", "bucket": "Global Corporate Debt", "duration_profile": "Medium-Long (~8y)", "credit_profile": "Investment Grade"},
-}
+# Reliable fixed-income & cash/rate proxies on Yahoo Finance
+DEBT_AND_LIQUID_PROXIES = [
+    {
+        "name": "US 3M T-Bill Rate (^IRX)",
+        "ticker": "^IRX",
+        "bucket": "Liquid / Money Market",
+        "duration_profile": "Ultra-Short (<3M)",
+        "credit_profile": "Sovereign Cash",
+        "currency": "%",
+    },
+    {
+        "name": "US 1–3Y Treasury ETF (SHY)",
+        "ticker": "SHY",
+        "bucket": "Short Duration Debt",
+        "duration_profile": "Short (~1.8y)",
+        "credit_profile": "Sovereign",
+        "currency": "$",
+    },
+    {
+        "name": "US 7–10Y Treasury ETF (IEF)",
+        "ticker": "IEF",
+        "bucket": "Medium-Long Gilt / Sov",
+        "duration_profile": "Intermediate (~7.5y)",
+        "credit_profile": "Sovereign",
+        "currency": "$",
+    },
+    {
+        "name": "US 20+Y Treasury ETF (TLT)",
+        "ticker": "TLT",
+        "bucket": "Long Duration Gilt",
+        "duration_profile": "Long (~16.5y)",
+        "credit_profile": "Sovereign",
+        "currency": "$",
+    },
+    {
+        "name": "US Inv. Grade Corp ETF (LQD)",
+        "ticker": "LQD",
+        "bucket": "Corporate / Credit Debt",
+        "duration_profile": "Medium-Long (~8y)",
+        "credit_profile": "Investment Grade",
+        "currency": "$",
+    },
+]
 
 
 def clean_label(text):
@@ -70,15 +106,13 @@ def calc_pct_return(series, trading_days):
 
 
 def calc_yoy_history(close, start_year=1995):
-    """Computes calendar year-on-year returns from start_year (or earliest available year) through current year."""
     if close is None or close.empty:
         return {}
     s = close.copy()
     s.index = pd.to_datetime(s.index).tz_localize(None)
     s = s.sort_index()
 
-    years = sorted(s.index.year.unique())
-    years = [y for y in years if y >= start_year]
+    years = [y for y in sorted(s.index.year.unique()) if y >= start_year]
     yoy = {}
 
     for idx, yr in enumerate(years):
@@ -87,7 +121,6 @@ def calc_yoy_history(close, start_year=1995):
             continue
         end_val = float(yr_slice.iloc[-1])
 
-        # Base is prior year's last close if available; otherwise first close of that year
         prev_slice = s[s.index.year == (yr - 1)]
         if not prev_slice.empty:
             start_val = float(prev_slice.iloc[-1])
@@ -109,7 +142,7 @@ def get_currency_symbol(name, ticker):
         return "%"
     if "INR" in name or ticker.endswith(".NS") or ticker.endswith(".BO"):
         return "₹"
-    if "USD" in name or "Crude" in name or ticker in ["GC=F", "SI=F", "BZ=F", "EEM", "IEF", "LQD"]:
+    if "USD" in name or "Crude" in name or ticker in ["GC=F", "SI=F", "BZ=F", "EEM", "SHY", "IEF", "TLT", "LQD"]:
         return "$"
     return ""
 
@@ -127,12 +160,12 @@ def fetch_pe_ratio(ticker):
 
 def compute_vol_stance(price, dist_200dma, r_1d, r_1w):
     if r_1d is not None and r_1d >= 15:
-        return "Fear Spike • Volatility Surge"
+        return "Fear Spike", "1D Surge"
     if dist_200dma is not None and dist_200dma > 30:
-        return "Elevated Stress • Above 200-DMA"
+        return "Elevated Stress", "> 200-DMA"
     if price < 14 and (r_1w is None or r_1w <= 2):
-        return "Low-Vol • Calm Regime"
-    return "Normal Regime • Balanced Vol"
+        return "Low-Vol Calm", "Sub-14 VIX"
+    return "Normal Regime", "Balanced Vol"
 
 
 def compute_bi_stance(pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, vol_1y, is_equity=True):
@@ -151,42 +184,42 @@ def compute_bi_stance(pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, 
             drivers.append("Rich P/E")
         else:
             score -= 1.5
-            drivers.append("Expensive P/E")
+            drivers.append("High P/E")
 
     if dist_200dma is not None:
         if -12 <= dist_200dma < 0 and r_1m is not None and r_1m > 0:
             score += 1.5
-            drivers.append("Reversing Near 200-DMA")
+            drivers.append("200-DMA Reversal")
         elif 0 <= dist_200dma <= 12:
             score += 1.0
-            drivers.append("Above 200-DMA")
+            drivers.append("> 200-DMA")
         elif dist_200dma > 18:
             score -= 1.25
-            drivers.append("Extended vs 200-DMA")
+            drivers.append("Extended")
         elif dist_200dma < -15:
             score -= 1.0
-            drivers.append("Below 200-DMA")
+            drivers.append("< 200-DMA")
 
     if from_52w_high is not None and from_52w_high < -20 and (r_1m is None or r_1m <= 0):
         score -= 0.75
-        drivers.append("Deep Off High")
+        drivers.append("Off 52W High")
 
     pos_horizons = sum(1 for x in [r_1m, r_3m, r_1y] if x is not None and x > 0)
     neg_horizons = sum(1 for x in [r_1m, r_3m, r_1y] if x is not None and x < 0)
     if pos_horizons == 3:
         score += 1.0
-        drivers.append("Broad Uptrend")
+        drivers.append("Uptrend")
     elif neg_horizons == 3:
         score -= 1.0
-        drivers.append("Broad Downtrend")
+        drivers.append("Downtrend")
 
     if sharpe is not None:
         if sharpe >= 1.0:
             score += 0.75
-            drivers.append("Strong Sharpe")
+            drivers.append("High Sharpe")
         elif sharpe < -0.25:
             score -= 0.75
-            drivers.append("Weak Sharpe")
+            drivers.append("Low Sharpe")
 
     if vol_1y is not None and vol_1y > 28 and is_equity:
         score -= 0.5
@@ -197,14 +230,14 @@ def compute_bi_stance(pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, 
     elif score >= 1.25:
         label = "Accumulate"
     elif score >= -0.75:
-        label = "Hold / Neutral"
+        label = "Hold"
     elif score >= -2.0:
-        label = "Cautious / Trim"
+        label = "Trim"
     else:
-        label = "Avoid / Weak"
+        label = "Avoid"
 
-    top_reason = drivers[0] if drivers else "Balanced Signals"
-    return f"{label} • {top_reason}"
+    driver_text = drivers[0] if drivers else "Balanced"
+    return label, driver_text
 
 
 def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mode="equity", include_yoy=False):
@@ -233,9 +266,9 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mod
     from_52w_high = round(((current_price / high_52w) - 1) * 100, 2) if high_52w > 0 else None
 
     if mode == "vol":
-        bi_stance = compute_vol_stance(current_price, dist_200dma, r_1d, r_1w)
+        stance_label, stance_driver = compute_vol_stance(current_price, dist_200dma, r_1d, r_1w)
     else:
-        bi_stance = compute_bi_stance(
+        stance_label, stance_driver = compute_bi_stance(
             pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, ann_vol, is_equity=(mode == "equity")
         )
 
@@ -256,7 +289,8 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mod
         "from_52w_high": from_52w_high,
         "dist_200dma": dist_200dma,
         "pe": pe if mode == "equity" else None,
-        "bi_stance": bi_stance,
+        "bi_stance": stance_label,
+        "bi_driver": stance_driver,
     }
     if include_yoy:
         out["yoy_returns"] = calc_yoy_history(close, start_year=1995)
@@ -267,7 +301,7 @@ def analyze_ticker(name, ticker, category, rf_rate=0.068, include_yoy=False):
     try:
         period = "max" if include_yoy else "5y"
         hist = yf.Ticker(ticker).history(period=period, auto_adjust=True)
-        if hist.empty or len(hist) < 20:
+        if hist.empty or len(hist) < 10:
             return None, None
 
         close = hist["Close"].dropna()
@@ -294,22 +328,24 @@ def analyze_ticker(name, ticker, category, rf_rate=0.068, include_yoy=False):
 
 def fetch_debt_and_liquid(rf_rate=0.068):
     results = []
-    for label, meta in DEBT_AND_LIQUID_PROXIES.items():
+    for item in DEBT_AND_LIQUID_PROXIES:
         try:
-            hist = yf.Ticker(meta["ticker"]).history(period="5y", auto_adjust=True)
-            if hist.empty or len(hist) < 15:
+            hist = yf.Ticker(item["ticker"]).history(period="5y", auto_adjust=True)
+            if hist is None or hist.empty:
                 continue
             close = hist["Close"].dropna()
+            if len(close) < 5:
+                continue
             base = analyze_series(
-                label, meta["ticker"], close, rf_rate=rf_rate, pe=None,
-                currency=get_currency_symbol(label, meta["ticker"]), mode="macro", include_yoy=False
+                item["name"], item["ticker"], close, rf_rate=rf_rate, pe=None,
+                currency=item["currency"], mode="macro", include_yoy=False
             )
-            base["bucket"] = meta["bucket"]
-            base["duration_profile"] = meta["duration_profile"]
-            base["credit_profile"] = meta["credit_profile"]
+            base["bucket"] = item["bucket"]
+            base["duration_profile"] = item["duration_profile"]
+            base["credit_profile"] = item["credit_profile"]
             results.append(base)
         except Exception as e:
-            print(f"Debt proxy error ({label}): {e}")
+            print(f"Debt proxy error ({item['name']}): {e}")
     return results
 
 
