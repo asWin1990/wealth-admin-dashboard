@@ -2,6 +2,7 @@ import os
 import json
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 from fetch_data import run_fetch
 from ai_analyst import run_ai_analysis
@@ -39,7 +40,7 @@ st.markdown(
         background: #090E1A !important;
         border-right: 1px solid rgba(255, 255, 255, 0.06);
     }
-    .block-container { padding-top: 1.4rem; padding-bottom: 1.5rem; max-width: 1600px; }
+    .block-container { padding-top: 1.3rem; padding-bottom: 1.5rem; max-width: 1620px; }
 
     div[data-testid="stExpander"] p,
     div[data-testid="stExpander"] li,
@@ -94,9 +95,7 @@ st.markdown(
         font-size: 10px; font-weight: 700; background: rgba(212, 175, 55, 0.14);
         color: #E2C06D; margin-right: 6px;
     }
-    .tri-up { color: #34D399; font-weight: 700; }
-    .tri-dn { color: #F87171; font-weight: 700; }
-    h3, h4 { color: #E2C06D !important; font-weight: 600 !important; letter-spacing: 0.25px; margin-top: 0.6rem !important; margin-bottom: 0.4rem !important; }
+    h3, h4 { color: #E2C06D !important; font-weight: 600 !important; letter-spacing: 0.25px; margin-top: 0.5rem !important; margin-bottom: 0.35rem !important; }
     button[data-baseweb="tab"] {
         color: #94A3B8 !important; font-weight: 600 !important; font-size: 13.5px !important; padding: 8px 12px !important;
     }
@@ -165,38 +164,61 @@ def format_price(item):
     return f"{val:,.2f}"
 
 
-def fmt_tri_pct(val):
-    if val is None or pd.isna(val):
-        return "—"
-    tri = "▲" if val >= 0 else "▼"
-    sign = "+" if val > 0 else ""
-    return f"{tri} {sign}{val:.2f}%"
-
-
-def format_stance_cell(stance_raw):
-    text = stance_raw or "Hold | Balanced signals"
+def split_stance(stance_raw):
+    text = stance_raw or "Hold | mixed signals"
     if " | " in text:
         head, reason = text.split(" | ", 1)
     else:
         head, reason = text, ""
+    h = head.strip().lower()
+    if h.startswith("buy"):
+        bucket = "Buy"
+    elif h.startswith("sell"):
+        bucket = "Sell"
+    else:
+        bucket = "Hold"
+    return bucket, head.strip(), reason.strip()
 
-    head_lower = head.lower()
-    if "strong buy" in head_lower or "accumulate" in head_lower or "low-vol" in head_lower:
+
+def format_stance_cell(stance_raw):
+    bucket, head, reason = split_stance(stance_raw)
+    if bucket == "Buy":
         tag_bg, tag_fg = "rgba(16, 185, 129, 0.18)", "#34D399"
-    elif "trim" in head_lower or "avoid" in head_lower or "fear spike" in head_lower or "elevated stress" in head_lower:
+    elif bucket == "Sell":
         tag_bg, tag_fg = "rgba(239, 68, 68, 0.18)", "#F87171"
     else:
-        tag_bg, tag_fg = "rgba(212, 175, 55, 0.18)", "#F3D58D"
+        tag_bg, tag_fg = "rgba(245, 158, 11, 0.18)", "#FBBF24"
 
     reason_html = (
-        f"<div style='font-size:11px;color:#CBD5E1;line-height:1.3;margin-top:3px;white-space:normal;'>{reason}</div>"
+        f"<div style='font-size:11px;color:#E2E8F0;line-height:1.25;margin-top:2px;white-space:normal;'>{reason}</div>"
         if reason else ""
     )
     return (
-        f"<div style='min-width:240px;max-width:300px;white-space:normal;'>"
-        f"<span style='display:inline-block;padding:2px 7px;border-radius:4px;background:{tag_bg};color:{tag_fg};font-size:11px;font-weight:700;'>{head}</span>"
+        f"<div style='min-width:210px;max-width:260px;white-space:normal;'>"
+        f"<span style='display:inline-block;padding:1px 6px;border-radius:4px;background:{tag_bg};color:{tag_fg};font-size:10.5px;font-weight:700;'>{head}</span>"
         f"{reason_html}</div>"
     )
+
+
+def pct_badge_html(v):
+    if v is None or pd.isna(v):
+        return "<span style='color:#64748B;'>—</span>"
+    sign = "+" if v > 0 else ""
+    if v >= 0:
+        bg = "rgba(16, 185, 129, 0.24)" if v >= 10 else "rgba(16, 185, 129, 0.11)"
+        return f"<span style='display:inline-block;padding:1px 5px;border-radius:4px;background:{bg};color:#34D399;font-weight:700;font-size:11.5px;'>{sign}{v:.2f}%</span>"
+    bg = "rgba(239, 68, 68, 0.24)" if v <= -10 else "rgba(239, 68, 68, 0.11)"
+    return f"<span style='display:inline-block;padding:1px 5px;border-radius:4px;background:{bg};color:#F87171;font-weight:700;font-size:11.5px;'>{v:.2f}%</span>"
+
+
+def rsi_badge_html(v):
+    if v is None or pd.isna(v):
+        return "<span style='color:#64748B;'>—</span>"
+    if v >= 70:
+        return f"<span style='display:inline-block;padding:1px 5px;border-radius:4px;background:rgba(239,68,68,0.16);color:#F87171;font-weight:700;font-size:11.5px;'>{v:.1f}</span>"
+    if v <= 35:
+        return f"<span style='display:inline-block;padding:1px 5px;border-radius:4px;background:rgba(16,185,129,0.16);color:#34D399;font-weight:700;font-size:11.5px;'>{v:.1f}</span>"
+    return f"<span style='display:inline-block;padding:1px 5px;border-radius:4px;background:rgba(148,163,184,0.12);color:#E2E8F0;font-size:11.5px;'>{v:.1f}</span>"
 
 
 # --- HEADER ---
@@ -234,14 +256,13 @@ for idx, (label, item) in enumerate(kpis):
         if item:
             d1 = item.get("1D") or 0
             cls = "kpi-pos" if d1 >= 0 else "kpi-neg"
-            arrow = "▲" if d1 >= 0 else "▼"
             sign = "+" if d1 > 0 else ""
             st.markdown(
                 f"""
                 <div class="kpi-card">
                   <div class="kpi-label">{label}</div>
                   <div class="kpi-val">{format_price(item)}</div>
-                  <div class="{cls}">{arrow} {sign}{d1:.2f}%</div>
+                  <div class="{cls}">{sign}{d1:.2f}%</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -252,13 +273,12 @@ with kpi_cols[6]:
     gsec = macro.get("india_10y_gsec_approx", 6.85)
     spread = round(gsec - repo, 2)
     sprd_cls = "kpi-pos" if spread >= 0 else "kpi-neg"
-    sprd_tri = "▲" if spread >= 0 else "▼"
     st.markdown(
         f"""
         <div class="kpi-card">
           <div class="kpi-label">RBI Repo / 10Y</div>
           <div class="kpi-val">{repo:.2f}%/{gsec:.2f}%</div>
-          <div class="{sprd_cls}">{sprd_tri} {spread:+.2f}% Sprd</div>
+          <div class="{sprd_cls}">{spread:+.2f}% Sprd</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -271,16 +291,16 @@ with st.expander("📘 AURA AI guide — Glossary, CAGR Formula & BI stance | re
         st.markdown(
             """
             * **CAGR (3Y & 5Y):** `((Ending / Beginning) ^ (1 / Years)) - 1` annualized return rate.
-            * **1D, 1W, 1M, 3M, 1Y:** Return over 1, 5, 21, 63, and 252 trading sessions (`▲` gain / `▼` loss).
+            * **1D, 1W, 1M, 3M, 1Y:** Return over 1, 5, 21, 63, and 252 trading sessions (`+` gain / `-` loss).
             * **Vol % & Sharpe:** Annualized volatility (`std * √252`) and `(1Y Return - 6.8%) / Vol %` (omitted on VIX).
             """
         )
     with g2:
         st.markdown(
             """
-            * **RSI (14):** 14-day momentum oscillator (`>70–75` stretched, `<30–35` oversold; omitted on VIX).
+            * **RSI (14):** 14-day momentum oscillator (`>70` stretched, `<35` oversold; omitted on VIX).
             * **vs 52W High & vs 200-DMA:** Distance from 52-week peak and 200-day moving average.
-            * **BI stance | reasoning:** Stance tag paired with its primary valuation, trend, RSI/momentum, or volatility reason.
+            * **BI stance | reasoning:** `Buy`, `Hold`, or `Sell` tag paired with plain-English context.
             """
         )
 
@@ -296,29 +316,19 @@ if ai:
     st.info(f"**🏦 Debt & Macro Call:** {ai.get('debt_and_macro', 'N/A')}")
 
 
-# --- COMPACT HTML + TRIANGLE TABLE RENDERER ---
+# --- COMPACT HEATMAP TABLE RENDERER ---
 def render_heatmap(items, show_valuation=True, show_risk_metrics=True):
     if not items:
         st.info("No data available. Click **🔄 Refresh Live Data & AI** in the sidebar.")
         return
 
-    headers = ["Benchmark", "Price", "1D", "1W", "1M", "3M", "1Y", "3Y CAGR", "5Y CAGR", "Vol %"]
+    headers = ["Asset", "Price", "1D", "1W", "1M", "3M", "1Y", "3Y", "5Y", "Vol"]
     if show_risk_metrics:
         headers.extend(["Sharpe", "RSI"])
-    headers.extend(["vs 52W High", "vs 200-DMA"])
+    headers.extend(["52W High", "200-DMA"])
     if show_valuation:
         headers.append("P/E")
     headers.append("BI stance | reasoning")
-
-    def cell_pct_html(v):
-        if v is None or pd.isna(v):
-            return "<span style='color:#64748B;'>—</span>"
-        sign = "+" if v > 0 else ""
-        if v >= 0:
-            bg = "rgba(16, 185, 129, 0.22)" if v >= 10 else "rgba(16, 185, 129, 0.10)"
-            return f"<span style='display:inline-block;padding:1px 5px;border-radius:4px;background:{bg};color:#34D399;font-weight:700;font-size:12px;'>▲ {sign}{v:.2f}%</span>"
-        bg = "rgba(239, 68, 68, 0.22)" if v <= -10 else "rgba(239, 68, 68, 0.10)"
-        return f"<span style='display:inline-block;padding:1px 5px;border-radius:4px;background:{bg};color:#F87171;font-weight:700;font-size:12px;'>▼ {v:.2f}%</span>"
 
     def plain_num(v, fmt):
         if v is None or pd.isna(v):
@@ -327,39 +337,36 @@ def render_heatmap(items, show_valuation=True, show_risk_metrics=True):
 
     body_rows = []
     for x in items:
-        stance_val = x.get("bi_stance", "Hold | Balanced signals")
-        if " | " not in stance_val and x.get("bi_driver"):
-            stance_val = f"{stance_val} | {x.get('bi_driver')}"
-
+        stance_val = x.get("bi_stance", "Hold | mixed signals")
         tds = [
-            f"<td style='font-weight:600;color:#F8FAFC;white-space:nowrap;'>{x['name']}</td>",
-            f"<td style='font-family:\"JetBrains Mono\",monospace;font-weight:600;color:#F8FAFC;white-space:nowrap;'>{format_price(x)}</td>",
-            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{cell_pct_html(x.get('1D'))}</td>",
-            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{cell_pct_html(x.get('1W'))}</td>",
-            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{cell_pct_html(x.get('1M'))}</td>",
-            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{cell_pct_html(x.get('3M'))}</td>",
-            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{cell_pct_html(x.get('1Y'))}</td>",
-            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{cell_pct_html(x.get('3Y_CAGR'))}</td>",
-            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{cell_pct_html(x.get('5Y_CAGR'))}</td>",
-            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{plain_num(x.get('volatility_1y'), '{:.1f}%')}</td>",
+            f"<td style='font-weight:600;color:#F8FAFC;white-space:nowrap;padding:6px 8px;'>{x['name']}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;font-weight:600;color:#F8FAFC;white-space:nowrap;padding:6px 8px;'>{format_price(x)}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 7px;'>{pct_badge_html(x.get('1D'))}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 7px;'>{pct_badge_html(x.get('1W'))}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 7px;'>{pct_badge_html(x.get('1M'))}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 7px;'>{pct_badge_html(x.get('3M'))}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 7px;'>{pct_badge_html(x.get('1Y'))}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 7px;'>{pct_badge_html(x.get('3Y_CAGR'))}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 7px;'>{pct_badge_html(x.get('5Y_CAGR'))}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 7px;'>{plain_num(x.get('volatility_1y'), '{:.1f}%')}</td>",
         ]
         if show_risk_metrics:
-            tds.append(f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{plain_num(x.get('sharpe_1y'), '{:.2f}')}</td>")
-            tds.append(f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{plain_num(x.get('rsi_14'), '{:.1f}')}</td>")
-        tds.append(f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{cell_pct_html(x.get('from_52w_high'))}</td>")
-        tds.append(f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{cell_pct_html(x.get('dist_200dma'))}</td>")
+            tds.append(f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 7px;'>{plain_num(x.get('sharpe_1y'), '{:.2f}')}</td>")
+            tds.append(f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 7px;'>{rsi_badge_html(x.get('rsi_14'))}</td>")
+        tds.append(f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 7px;'>{pct_badge_html(x.get('from_52w_high'))}</td>")
+        tds.append(f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 7px;'>{pct_badge_html(x.get('dist_200dma'))}</td>")
         if show_valuation:
-            tds.append(f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{plain_num(x.get('pe'), '{:.1f}')}</td>")
-        tds.append(f"<td style='padding:7px 10px;'>{format_stance_cell(stance_val)}</td>")
+            tds.append(f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 7px;'>{plain_num(x.get('pe'), '{:.1f}')}</td>")
+        tds.append(f"<td style='padding:6px 8px;'>{format_stance_cell(stance_val)}</td>")
         body_rows.append("<tr style='border-bottom:1px solid rgba(255,255,255,0.05);'>" + "".join(tds) + "</tr>")
 
     th_html = "".join(
-        f"<th style='text-align:left;padding:8px 10px;color:#94A3B8;font-size:10.5px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid rgba(255,255,255,0.12);white-space:nowrap;'>{h}</th>"
+        f"<th style='text-align:left;padding:7px 8px;color:#94A3B8;font-size:10px;text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid rgba(255,255,255,0.12);white-space:nowrap;'>{h}</th>"
         for h in headers
     )
     table_html = (
-        "<div style='overflow-x:auto;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:rgba(15,23,42,0.72);margin-bottom:10px;'>"
-        "<table style='width:100%;border-collapse:collapse;font-size:12.5px;'>"
+        "<div style='overflow-x:auto;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:rgba(15,23,42,0.72);margin-bottom:8px;'>"
+        "<table style='width:100%;border-collapse:collapse;font-size:12px;'>"
         f"<thead><tr>{th_html}</tr></thead>"
         f"<tbody>{''.join(body_rows)}</tbody>"
         "</table></div>"
@@ -397,44 +404,75 @@ with tab1:
 with tab2:
     chart_mode = st.radio(
         "Chart View",
-        ["YoY Returns (Since 1995)", "Sector Leader vs. Laggard & Quadrant"],
+        ["YoY Returns Heatmap (Since 1995)", "Sector Leader vs. Laggard & Quadrant"],
         horizontal=True,
     )
 
-    if chart_mode == "YoY Returns (Since 1995)":
-        st.markdown("#### Year-on-Year Calendar Returns Since 1995")
+    if chart_mode == "YoY Returns Heatmap (Since 1995)":
+        st.markdown("#### Year-on-Year Returns Heatmap (1995–Present)")
         yoy_candidates = [x for x in (markets.get("indian_equity", []) + markets.get("global_indices", [])) if x.get("yoy_returns")]
         if yoy_candidates:
-            selected_yoy_name = st.selectbox(
-                "Select Broad Market Index",
+            selected_indices = st.multiselect(
+                "Compare Indices",
                 options=[x["name"] for x in yoy_candidates],
-                index=0,
+                default=[x["name"] for x in yoy_candidates[:3]],
             )
-            chosen = next(x for x in yoy_candidates if x["name"] == selected_yoy_name)
-            yoy_dict = chosen.get("yoy_returns", {})
-            if yoy_dict:
-                yoy_df = pd.DataFrame([{"Year": k, "YoY Return %": v} for k, v in yoy_dict.items()])
-                yoy_fig = px.bar(
-                    yoy_df,
-                    x="Year",
-                    y="YoY Return %",
-                    color="YoY Return %",
-                    color_continuous_scale=["#EF4444", "#475569", "#10B981"],
-                    labels={"YoY Return %": f"{selected_yoy_name} YoY Return (%)"},
-                    template="plotly_dark",
-                    height=340,
+            chosen_list = [x for x in yoy_candidates if x["name"] in selected_indices] or [yoy_candidates[0]]
+            all_years = sorted({yr for x in chosen_list for yr in x.get("yoy_returns", {}).keys()})
+
+            if all_years:
+                z_vals = []
+                text_vals = []
+                y_labels = []
+                for x in chosen_list:
+                    y_labels.append(x["name"])
+                    row_z = []
+                    row_t = []
+                    ymap = x.get("yoy_returns", {})
+                    for yr in all_years:
+                        val = ymap.get(yr)
+                        if val is None:
+                            row_z.append(np.nan)
+                            row_t.append("—")
+                        else:
+                            row_z.append(val)
+                            row_t.append(f"{val:+.0f}%")
+                    z_vals.append(row_z)
+                    text_vals.append(row_t)
+
+                hm_fig = go.Figure(
+                    data=go.Heatmap(
+                        z=z_vals,
+                        x=all_years,
+                        y=y_labels,
+                        text=text_vals,
+                        texttemplate="%{text}",
+                        textfont={"size": 10},
+                        colorscale=[
+                            [0.0, "#991B1B"],
+                            [0.45, "#1E293B"],
+                            [1.0, "#059669"],
+                        ],
+                        zmid=0,
+                        colorbar={"title": "YoY %"},
+                        hovertemplate="<b>%{y}</b> (%{x})<br>Annual Return: <b>%{text}</b><extra></extra>",
+                    )
                 )
-                yoy_fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
-                st.plotly_chart(yoy_fig, use_container_width=True)
-                st.dataframe(yoy_df.T, use_container_width=True)
+                hm_fig.update_layout(
+                    template="plotly_dark",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(17,25,40,0.5)",
+                    height=max(240, 95 + len(y_labels) * 55),
+                    margin={"l": 10, "r": 10, "t": 20, "b": 30},
+                )
+                st.plotly_chart(hm_fig, use_container_width=True)
         else:
             st.info("Click **🔄 Refresh Live Data & AI** once to pull historical YoY series since 1995.")
 
     else:
-        st.markdown("#### Sectoral Performance Breakup — Leader vs. Laggard Matrix")
+        st.markdown("#### Sectoral Performance Breakup — Leader vs. Laggard Heatmap")
         sectors = markets.get("indian_sectors", [])
         if sectors:
-            sdf = pd.DataFrame(sectors)
             nifty_item = find_item("indian_equity", "Nifty 50")
             nifty_3m = nifty_item.get("3M") if nifty_item and nifty_item.get("3M") is not None else 0.0
             nifty_1y = nifty_item.get("1Y") if nifty_item and nifty_item.get("1Y") is not None else 0.0
@@ -448,51 +486,104 @@ with tab2:
                 rel_1y = round(r1y - nifty_1y, 2) if r1y is not None else None
 
                 if rel_3m is not None and rel_3m >= 3.0 and (r1m is not None and r1m >= 0):
-                    bucket = "▲ Leader"
+                    bucket = "Leader"
                 elif rel_3m is not None and rel_3m <= -3.0:
-                    bucket = "▼ Laggard"
+                    bucket = "Laggard"
                 else:
                     bucket = "In-Line"
 
-                stance_val = x.get("bi_stance", "Hold | Balanced signals")
-                if " | " not in stance_val and x.get("bi_driver"):
-                    stance_val = f"{stance_val} | {x.get('bi_driver')}"
-
                 matrix_rows.append({
                     "Sector": x["name"],
-                    "1M": fmt_tri_pct(r1m),
-                    "3M": fmt_tri_pct(r3m),
-                    "1Y": fmt_tri_pct(r1y),
-                    "vs Nifty 3M": fmt_tri_pct(rel_3m),
-                    "vs Nifty 1Y": fmt_tri_pct(rel_1y),
-                    "RSI": f"{x['rsi_14']:.1f}" if x.get("rsi_14") is not None else "—",
-                    "Vol %": f"{x['volatility_1y']:.1f}%" if x.get("volatility_1y") is not None else "—",
+                    "1M": pct_badge_html(r1m),
+                    "3M": pct_badge_html(r3m),
+                    "1Y": pct_badge_html(r1y),
+                    "vs Nifty 3M": pct_badge_html(rel_3m),
+                    "vs Nifty 1Y": pct_badge_html(rel_1y),
+                    "RSI": rsi_badge_html(x.get("rsi_14")),
                     "P/E": f"{x['pe']:.1f}" if x.get("pe") is not None else "—",
                     "Group": bucket,
-                    "BI stance | reasoning": stance_val,
+                    "BI stance | reasoning": format_stance_cell(x.get("bi_stance", "Hold | mixed signals")),
                     "_sort_3m": rel_3m if rel_3m is not None else -9999.0,
                 })
 
             mdf = pd.DataFrame(matrix_rows).sort_values("_sort_3m", ascending=False).drop(columns=["_sort_3m"])
-            st.dataframe(mdf, use_container_width=True, hide_index=True)
+            m_headers = list(mdf.columns)
+            m_ths = "".join(
+                f"<th style='text-align:left;padding:7px 8px;color:#94A3B8;font-size:10px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.12);white-space:nowrap;'>{h}</th>"
+                for h in m_headers
+            )
+            m_trs = []
+            for _, r in mdf.iterrows():
+                cells = [
+                    f"<td style='font-weight:600;color:#F8FAFC;white-space:nowrap;padding:6px 8px;'>{r['Sector']}</td>",
+                    f"<td style='font-family:\"JetBrains Mono\",monospace;padding:6px 7px;'>{r['1M']}</td>",
+                    f"<td style='font-family:\"JetBrains Mono\",monospace;padding:6px 7px;'>{r['3M']}</td>",
+                    f"<td style='font-family:\"JetBrains Mono\",monospace;padding:6px 7px;'>{r['1Y']}</td>",
+                    f"<td style='font-family:\"JetBrains Mono\",monospace;padding:6px 7px;'>{r['vs Nifty 3M']}</td>",
+                    f"<td style='font-family:\"JetBrains Mono\",monospace;padding:6px 7px;'>{r['vs Nifty 1Y']}</td>",
+                    f"<td style='font-family:\"JetBrains Mono\",monospace;padding:6px 7px;'>{r['RSI']}</td>",
+                    f"<td style='font-family:\"JetBrains Mono\",monospace;color:#E2E8F0;padding:6px 7px;'>{r['P/E']}</td>",
+                    f"<td style='color:#CBD5E1;font-weight:600;padding:6px 8px;'>{r['Group']}</td>",
+                    f"<td style='padding:6px 8px;'>{r['BI stance | reasoning']}</td>",
+                ]
+                m_trs.append("<tr style='border-bottom:1px solid rgba(255,255,255,0.05);'>" + "".join(cells) + "</tr>")
 
-            qdf = sdf.dropna(subset=["dist_200dma", "3M"])
-            if not qdf.empty:
-                fig = px.scatter(
-                    qdf,
-                    x="dist_200dma",
-                    y="3M",
-                    text="name",
-                    color="bi_stance",
-                    size=qdf["volatility_1y"].fillna(15),
-                    labels={"dist_200dma": "Distance from 200-DMA (%)", "3M": "3-Month Return (%)"},
-                    template="plotly_dark",
-                    height=380,
-                )
-                fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
+            st.markdown(
+                "<div style='overflow-x:auto;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:rgba(15,23,42,0.72);margin-bottom:12px;'>"
+                f"<table style='width:100%;border-collapse:collapse;font-size:12px;'><thead><tr>{m_ths}</tr></thead><tbody>{''.join(m_trs)}</tbody></table></div>",
+                unsafe_allow_html=True,
+            )
+
+            # Simple 3-Bucket Sector Scatter (Buy / Hold / Sell + Human Hover)
+            q_items = []
+            for x in sectors:
+                if x.get("dist_200dma") is not None and x.get("3M") is not None:
+                    bkt, head, reason = split_stance(x.get("bi_stance"))
+                    q_items.append({
+                        "Sector": x["name"],
+                        "Trend vs 200-DMA (%)": x["dist_200dma"],
+                        "3M Return (%)": x["3M"],
+                        "Stance": bkt,
+                        "Summary": f"{head} — {reason}" if reason else head,
+                    })
+
+            if q_items:
+                qdf = pd.DataFrame(q_items)
+                color_map = {"Buy": "#10B981", "Hold": "#F59E0B", "Sell": "#EF4444"}
+                fig = go.Figure()
+                for bkt in ["Buy", "Hold", "Sell"]:
+                    sub = qdf[qdf["Stance"] == bkt]
+                    if sub.empty:
+                        continue
+                    fig.add_trace(
+                        go.Scatter(
+                            x=sub["Trend vs 200-DMA (%)"],
+                            y=sub["3M Return (%)"],
+                            mode="markers+text",
+                            name=bkt,
+                            text=sub["Sector"],
+                            textposition="top center",
+                            customdata=sub[["Summary", "3M Return (%)", "Trend vs 200-DMA (%)"]],
+                            marker={"size": 14, "color": color_map[bkt], "line": {"width": 1.5, "color": "#0F172A"}},
+                            hovertemplate=(
+                                "<b>%{text}</b><br>"
+                                "View: %{customdata[0]}<br>"
+                                "3M Move: %{customdata[1]:+.1f}%<br>"
+                                "Vs 200-DMA: %{customdata[2]:+.1f}%<extra></extra>"
+                            ),
+                        )
+                    )
                 fig.add_vline(x=0, line_dash="dash", line_color="#64748B")
                 fig.add_hline(y=0, line_dash="dash", line_color="#64748B")
-                fig.update_traces(textposition="top center")
+                fig.update_layout(
+                    template="plotly_dark",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(17,25,40,0.5)",
+                    xaxis_title="Distance from 200-DMA (%)",
+                    yaxis_title="3-Month Return (%)",
+                    height=370,
+                    margin={"l": 10, "r": 10, "t": 20, "b": 30},
+                )
                 st.plotly_chart(fig, use_container_width=True)
 
 with tab3:
@@ -535,15 +626,14 @@ with tab5:
     gsec_5y = float(macro.get("india_5y_gsec_approx", 6.75))
     gsec_10y = float(macro.get("india_10y_gsec_approx", 6.85))
     spread = round(gsec_10y - repo, 2)
-    sprd_tri = "▲" if spread >= 0 else "▼"
 
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("RBI Repo Rate", f"{repo:.2f}%")
     m2.metric("India 1Y G-Sec", f"{gsec_1y:.2f}%")
     m3.metric("India 10Y G-Sec", f"{gsec_10y:.2f}%")
-    m4.metric("10Y vs. Repo Spread", f"{sprd_tri} {spread:+.2f}%")
+    m4.metric("10Y vs. Repo Spread", f"{spread:+.2f}%")
 
-    c_left, c_right = st.columns([1, 1.3])
+    c_left, c_right = st.columns([1, 1.35])
     with c_left:
         curve_df = pd.DataFrame([
             {"Tenor": "RBI Repo", "Yield %": repo},
@@ -559,36 +649,6 @@ with tab5:
             markers=True,
             labels={"Yield %": "Yield (%)"},
             template="plotly_dark",
-            height=280,
+            height=260,
         )
-        curve_fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
-        st.plotly_chart(curve_fig, use_container_width=True)
-
-    with c_right:
-        st.markdown("##### Debt Category Duration & Role")
-        domestic_matrix = pd.DataFrame([
-            {"Category": "Liquid / Overnight", "Duration": "<91d", "Rate Risk": "Minimal", "Role": "Liquidity & cash"},
-            {"Category": "Money Market / Low Dur.", "Duration": "6m–1.5y", "Rate Risk": "Low", "Role": "Short accrual"},
-            {"Category": "Short Duration", "Duration": "1–3y", "Rate Risk": "Low–Mod", "Role": "Balanced accrual"},
-            {"Category": "Corporate / Banking & PSU", "Duration": "2–5y", "Rate Risk": "Moderate", "Role": "AAA spread pickup"},
-            {"Category": "Gilt / Long Duration", "Duration": "7–10y+", "Rate Risk": "High", "Role": "Yield-move / MTM"},
-        ])
-        st.dataframe(domestic_matrix, use_container_width=True, hide_index=True)
-
-    st.markdown("#### Live AMFI Indian Debt & Liquid Mutual Fund NAVs")
-    if amfi_debt_schemes:
-        adf = pd.DataFrame(amfi_debt_schemes).rename(columns={
-            "scheme_name": "AMFI Scheme (Growth)",
-            "bucket": "Category",
-            "duration": "Duration",
-            "credit": "Credit",
-            "nav": "NAV (₹)",
-            "nav_date": "NAV Date",
-        })
-        st.dataframe(
-            adf.style.format({"NAV (₹)": "₹{:.4f}"}),
-            use_container_width=True,
-            hide_index=True,
-        )
-    else:
-        st.info("Click **🔄 Refresh Live Data & AI** once to fetch live AMFI Indian debt/liquid NAVs.")
+        curve_fig.update_layout(paper_bgcolor="rgba(0,0,
