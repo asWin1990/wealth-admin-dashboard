@@ -139,12 +139,12 @@ def fetch_pe_ratio(ticker):
 
 def compute_vol_stance(price, dist_200dma, r_1d, r_1w):
     if r_1d is not None and r_1d >= 15:
-        return "Fear Spike | 1D volatility surge"
+        return "Sell | 1D volatility spike"
     if dist_200dma is not None and dist_200dma > 30:
-        return "Elevated Stress | Well above 200-DMA"
+        return "Sell | Elevated stress"
     if price < 14 and (r_1w is None or r_1w <= 2):
-        return "Low-Vol Calm | Sub-14 volatility"
-    return "Normal Regime | Balanced volatility"
+        return "Buy | Calm volatility"
+    return "Hold | Normal volatility"
 
 
 def compute_bi_stance(pe, dist_200dma, from_52w_high, rsi_14, r_1m, r_3m, r_1y, sharpe, vol_1y, is_equity=True):
@@ -154,76 +154,72 @@ def compute_bi_stance(pe, dist_200dma, from_52w_high, rsi_14, r_1m, r_3m, r_1y, 
     if is_equity and pe is not None:
         if pe < 18:
             score += 1.5
-            reasons.append(f"P/E {pe:.1f}x cheap")
+            reasons.append("reasonable valuation")
         elif pe <= 24:
             score += 0.75
-            reasons.append(f"P/E {pe:.1f}x fair")
+            reasons.append("fair valuation")
         elif pe <= 30:
             score -= 0.5
-            reasons.append(f"P/E {pe:.1f}x rich")
+            reasons.append("rich valuation")
         else:
             score -= 1.5
-            reasons.append(f"P/E {pe:.1f}x high")
+            reasons.append("stretched valuation")
 
     if dist_200dma is not None:
         if -12 <= dist_200dma < 0 and r_1m is not None and r_1m > 0:
             score += 1.5
-            reasons.append("1M bounce near 200-DMA")
+            reasons.append("bouncing near long-term average")
         elif 0 <= dist_200dma <= 12:
             score += 1.0
-            reasons.append("Above 200-DMA")
+            reasons.append("healthy long-term trend")
         elif dist_200dma > 18:
             score -= 1.25
-            reasons.append("Extended above 200-DMA")
+            reasons.append("far above long-term average")
         elif dist_200dma < -15:
             score -= 1.0
-            reasons.append("Below 200-DMA")
+            reasons.append("below long-term average")
 
     if rsi_14 is not None:
         if rsi_14 > 75:
             score -= 0.5
-            reasons.append(f"RSI {rsi_14:.0f} overbought")
+            reasons.append("short-term overbought")
         elif rsi_14 < 30:
             score += 0.5
-            reasons.append(f"RSI {rsi_14:.0f} oversold")
+            reasons.append("short-term oversold")
 
     if from_52w_high is not None and from_52w_high < -20 and (r_1m is None or r_1m <= 0):
         score -= 0.75
-        reasons.append(f"{from_52w_high:.0f}% off 52W high")
+        reasons.append("well off 1-year high")
 
     pos_horizons = sum(1 for x in [r_1m, r_3m, r_1y] if x is not None and x > 0)
     neg_horizons = sum(1 for x in [r_1m, r_3m, r_1y] if x is not None and x < 0)
     if pos_horizons == 3:
         score += 1.0
-        reasons.append("1M/3M/1Y positive")
+        reasons.append("steady multi-month gains")
     elif neg_horizons == 3:
         score -= 1.0
-        reasons.append("1M/3M/1Y negative")
+        reasons.append("broad multi-month weakness")
 
     if sharpe is not None:
         if sharpe >= 1.0:
             score += 0.75
-            reasons.append(f"Sharpe {sharpe:.2f}")
+            reasons.append("strong risk-adjusted return")
         elif sharpe < -0.25:
             score -= 0.75
-            reasons.append(f"Weak Sharpe {sharpe:.2f}")
+            reasons.append("weak risk-adjusted return")
 
     if vol_1y is not None and vol_1y > 28 and is_equity:
         score -= 0.5
-        reasons.append(f"High vol {vol_1y:.0f}%")
+        reasons.append("high price swings")
 
-    if score >= 2.5:
-        label = "Strong Buy"
-    elif score >= 1.25:
-        label = "Accumulate"
+    if score >= 1.25:
+        label = "Buy"
     elif score >= -0.75:
         label = "Hold"
-    elif score >= -2.0:
-        label = "Trim"
     else:
-        label = "Avoid"
+        label = "Sell"
 
-    reasoning = ", ".join(reasons[:2]) if reasons else "Balanced signals"
+    reasoning = ", ".join(reasons[:2]) if reasons else "mixed signals"
     return f"{label} | {reasoning}"
 
 
@@ -317,8 +313,9 @@ def analyze_ticker(name, ticker, category, rf_rate=0.068, include_yoy=False):
 
 def fetch_amfi_debt_schemes(per_bucket=3):
     schemes = []
+    headers = {"User-Agent": "Mozilla/5.0"}
     try:
-        resp = requests.get(AMFI_NAV_URL, timeout=20)
+        resp = requests.get(AMFI_NAV_URL, headers=headers, timeout=25)
         resp.raise_for_status()
         lines = resp.text.splitlines()
 
