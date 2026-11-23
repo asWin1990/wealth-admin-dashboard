@@ -39,7 +39,7 @@ st.markdown(
         background: #090E1A !important;
         border-right: 1px solid rgba(255, 255, 255, 0.06);
     }
-    .block-container { padding-top: 2.2rem; max-width: 1560px; }
+    .block-container { padding-top: 1.4rem; padding-bottom: 1.5rem; max-width: 1600px; }
 
     div[data-testid="stExpander"] p,
     div[data-testid="stExpander"] li,
@@ -50,16 +50,16 @@ st.markdown(
     }
 
     .brand-title {
-        font-size: 28px; font-weight: 700; letter-spacing: 1.2px;
+        font-size: 25px; font-weight: 700; letter-spacing: 1.1px;
         background: linear-gradient(90deg, #F8FAFC 0%, #E2C06D 60%, #D4AF37 100%);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        margin: 0;
+        margin: 0; line-height: 1.2;
     }
-    .brand-sub { font-size: 12px; color: #94A3B8; letter-spacing: 0.4px; margin-top: 4px; }
+    .brand-sub { font-size: 12px; color: #94A3B8; letter-spacing: 0.3px; margin-top: 3px; }
     .regime-pill {
-        display: inline-block; padding: 3px 10px; border-radius: 999px;
+        display: inline-block; padding: 2px 9px; border-radius: 999px;
         background: rgba(212, 175, 55, 0.14); border: 1px solid rgba(212, 175, 55, 0.4);
-        color: #F3D58D; font-size: 11px; font-weight: 600; margin-left: 8px;
+        color: #F3D58D; font-size: 10.5px; font-weight: 600; margin-left: 8px;
         animation: pulseGold 2.8s infinite;
     }
 
@@ -68,41 +68,37 @@ st.markdown(
         backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-top: 2px solid rgba(212, 175, 55, 0.7);
-        border-radius: 10px; padding: 14px 15px;
-        transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+        border-radius: 9px; padding: 10px 12px;
+        transition: transform 0.16s ease, border-color 0.16s ease;
     }
-    .kpi-card:hover {
-        transform: translateY(-3px);
-        border-color: rgba(212, 175, 55, 0.6);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    }
-    .kpi-label { font-size: 10px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.9px; font-weight: 600; }
-    .kpi-val { font-size: 19px; font-weight: 700; color: #F8FAFC; font-family: 'JetBrains Mono', monospace; margin-top: 6px; }
-    .kpi-pos { font-size: 12px; color: #34D399; font-weight: 700; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
-    .kpi-neg { font-size: 12px; color: #F87171; font-weight: 700; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+    .kpi-card:hover { transform: translateY(-2px); border-color: rgba(212, 175, 55, 0.6); }
+    .kpi-label { font-size: 9.5px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+    .kpi-val { font-size: 17px; font-weight: 700; color: #F8FAFC; font-family: 'JetBrains Mono', monospace; margin-top: 3px; }
+    .kpi-pos { font-size: 11px; color: #34D399; font-weight: 700; margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+    .kpi-neg { font-size: 11px; color: #F87171; font-weight: 700; margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
 
     .ai-box {
         background: rgba(17, 25, 40, 0.75);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-left: 3px solid #D4AF37;
-        padding: 16px 20px; border-radius: 8px; margin-bottom: 12px;
-        color: #E2E8F0; font-size: 13.5px; line-height: 1.6;
+        padding: 12px 16px; border-radius: 8px; margin-bottom: 8px;
+        color: #E2E8F0; font-size: 13px; line-height: 1.5;
     }
     .news-card {
         background: rgba(17, 25, 40, 0.65);
         border: 1px solid rgba(255, 255, 255, 0.07);
-        border-radius: 8px; padding: 14px 18px; margin-bottom: 10px;
+        border-radius: 8px; padding: 11px 15px; margin-bottom: 8px;
     }
     .badge {
-        display: inline-block; padding: 2px 8px; border-radius: 4px;
-        font-size: 10.5px; font-weight: 700; background: rgba(212, 175, 55, 0.14);
+        display: inline-block; padding: 2px 7px; border-radius: 4px;
+        font-size: 10px; font-weight: 700; background: rgba(212, 175, 55, 0.14);
         color: #E2C06D; margin-right: 6px;
     }
     .tri-up { color: #34D399; font-weight: 700; }
     .tri-dn { color: #F87171; font-weight: 700; }
-    h3, h4 { color: #E2C06D !important; font-weight: 600 !important; letter-spacing: 0.3px; }
+    h3, h4 { color: #E2C06D !important; font-weight: 600 !important; letter-spacing: 0.25px; margin-top: 0.6rem !important; margin-bottom: 0.4rem !important; }
     button[data-baseweb="tab"] {
-        color: #94A3B8 !important; font-weight: 600 !important; font-size: 14px !important; padding: 10px 14px !important;
+        color: #94A3B8 !important; font-weight: 600 !important; font-size: 13.5px !important; padding: 8px 12px !important;
     }
     button[data-baseweb="tab"][aria-selected="true"] {
         color: #F3D58D !important; border-bottom-color: #D4AF37 !important;
@@ -177,13 +173,30 @@ def fmt_tri_pct(val):
     return f"{tri} {sign}{val:.2f}%"
 
 
-def color_tri_pct(val):
-    if val is None or pd.isna(val):
-        return "<span style='color:#64748B;'>—</span>"
-    if val >= 0:
-        sign = "+" if val > 0 else ""
-        return f"<span class='tri-up'>▲ {sign}{val:.2f}%</span>"
-    return f"<span class='tri-dn'>▼ {val:.2f}%</span>"
+def format_stance_cell(stance_raw):
+    text = stance_raw or "Hold | Balanced signals"
+    if " | " in text:
+        head, reason = text.split(" | ", 1)
+    else:
+        head, reason = text, ""
+
+    head_lower = head.lower()
+    if "strong buy" in head_lower or "accumulate" in head_lower or "low-vol" in head_lower:
+        tag_bg, tag_fg = "rgba(16, 185, 129, 0.18)", "#34D399"
+    elif "trim" in head_lower or "avoid" in head_lower or "fear spike" in head_lower or "elevated stress" in head_lower:
+        tag_bg, tag_fg = "rgba(239, 68, 68, 0.18)", "#F87171"
+    else:
+        tag_bg, tag_fg = "rgba(212, 175, 55, 0.18)", "#F3D58D"
+
+    reason_html = (
+        f"<div style='font-size:11px;color:#CBD5E1;line-height:1.3;margin-top:3px;white-space:normal;'>{reason}</div>"
+        if reason else ""
+    )
+    return (
+        f"<div style='min-width:240px;max-width:300px;white-space:normal;'>"
+        f"<span style='display:inline-block;padding:2px 7px;border-radius:4px;background:{tag_bg};color:{tag_fg};font-size:11px;font-weight:700;'>{head}</span>"
+        f"{reason_html}</div>"
+    )
 
 
 # --- HEADER ---
@@ -198,8 +211,6 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
-st.markdown("<br>", unsafe_allow_html=True)
 
 # --- TOP KPI PULSE STRIP ---
 def find_item(cat, keyword):
@@ -253,49 +264,44 @@ with kpi_cols[6]:
         unsafe_allow_html=True,
     )
 
-st.markdown("<br>", unsafe_allow_html=True)
-
-# --- AURA AI GUIDE ---
-with st.expander("📘 AURA AI guide — Jargon Glossary, CAGR Methodology and BI stance | reasoning"):
+# --- COMPACT AURA AI GUIDE ---
+with st.expander("📘 AURA AI guide — Glossary, CAGR Formula & BI stance | reasoning"):
     g1, g2 = st.columns(2)
     with g1:
         st.markdown(
             """
-            * **CAGR (3Y and 5Y):** Compound Annual Growth Rate = `((Ending Price / Beginning Price) ^ (1 / Years)) - 1`. Converts multi-year cumulative price change into an annualized return rate.
-            * **1D, 1W, 1M, 3M and 1Y:** Point-to-point percentage return with green `▲` for gains and red `▼` for losses.
-            * **Vol %:** Annualized return volatility = `daily_std * √252`. Measures price fluctuation intensity.
-            * **Sharpe:** `(1Y Return - 6.8% Risk-Free Rate) / 1Y Volatility`. Gauges return per unit of volatility on return assets (omitted on VIX indices).
+            * **CAGR (3Y & 5Y):** `((Ending / Beginning) ^ (1 / Years)) - 1` annualized return rate.
+            * **1D, 1W, 1M, 3M, 1Y:** Return over 1, 5, 21, 63, and 252 trading sessions (`▲` gain / `▼` loss).
+            * **Vol % & Sharpe:** Annualized volatility (`std * √252`) and `(1Y Return - 6.8%) / Vol %` (omitted on VIX).
             """
         )
     with g2:
         st.markdown(
             """
-            * **RSI (14):** 14-day Relative Strength Index (`0–100`) on return/equity series. Above `70–75` flags overbought stretch; below `30–35` flags oversold pullback (omitted on VIX indices).
-            * **vs 52W High & vs 200-DMA:** Percentage distance below the 52-week peak and above/below the 200-day moving average.
-            * **P/E:** Trailing Price-to-Earnings multiple (sourced directly or via liquid ETF proxies for equity benchmarks).
-            * **BI stance | reasoning:** Combined stance label and concise reasoning separated by `|` (valuation, trend, RSI/momentum, or volatility).
+            * **RSI (14):** 14-day momentum oscillator (`>70–75` stretched, `<30–35` oversold; omitted on VIX).
+            * **vs 52W High & vs 200-DMA:** Distance from 52-week peak and 200-day moving average.
+            * **BI stance | reasoning:** Stance tag paired with its primary valuation, trend, RSI/momentum, or volatility reason.
             """
         )
 
-# --- AI AGENT BRIEF ---
+# --- COMPACT AI BRIEF ---
 if ai:
     c1, c2 = st.columns(2)
     with c1:
         opp_md = "<br>".join(f"• {x}" for x in ai.get("opportunities", []))
-        st.markdown(f'<div class="ai-box"><strong>🎯 BI Opportunities</strong><br><br>{opp_md}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="ai-box"><strong>🎯 BI Opportunities</strong><br>{opp_md}</div>', unsafe_allow_html=True)
     with c2:
         risk_md = "<br>".join(f"• {x}" for x in ai.get("risk_flags", []))
-        st.markdown(f'<div class="ai-box"><strong>⚠️ Risk and Overextension Alerts</strong><br><br>{risk_md}</div>', unsafe_allow_html=True)
-    st.info(f"**🏦 Debt Duration and Macro Call:** {ai.get('debt_and_macro', 'N/A')}")
+        st.markdown(f'<div class="ai-box"><strong>⚠️ Risk & Overextension Alerts</strong><br>{risk_md}</div>', unsafe_allow_html=True)
+    st.info(f"**🏦 Debt & Macro Call:** {ai.get('debt_and_macro', 'N/A')}")
 
 
-# --- STYLED HTML + TRIANGLE TABLE RENDERER ---
+# --- COMPACT HTML + TRIANGLE TABLE RENDERER ---
 def render_heatmap(items, show_valuation=True, show_risk_metrics=True):
     if not items:
         st.info("No data available. Click **🔄 Refresh Live Data & AI** in the sidebar.")
         return
 
-    pct_keys = ["1D", "1W", "1M", "3M", "1Y", "3Y_CAGR", "5Y_CAGR", "from_52w_high", "dist_200dma"]
     headers = ["Benchmark", "Price", "1D", "1W", "1M", "3M", "1Y", "3Y CAGR", "5Y CAGR", "Vol %"]
     if show_risk_metrics:
         headers.extend(["Sharpe", "RSI"])
@@ -310,9 +316,9 @@ def render_heatmap(items, show_valuation=True, show_risk_metrics=True):
         sign = "+" if v > 0 else ""
         if v >= 0:
             bg = "rgba(16, 185, 129, 0.22)" if v >= 10 else "rgba(16, 185, 129, 0.10)"
-            return f"<span style='display:inline-block;padding:2px 6px;border-radius:4px;background:{bg};color:#34D399;font-weight:700;'>▲ {sign}{v:.2f}%</span>"
+            return f"<span style='display:inline-block;padding:1px 5px;border-radius:4px;background:{bg};color:#34D399;font-weight:700;font-size:12px;'>▲ {sign}{v:.2f}%</span>"
         bg = "rgba(239, 68, 68, 0.22)" if v <= -10 else "rgba(239, 68, 68, 0.10)"
-        return f"<span style='display:inline-block;padding:2px 6px;border-radius:4px;background:{bg};color:#F87171;font-weight:700;'>▼ {v:.2f}%</span>"
+        return f"<span style='display:inline-block;padding:1px 5px;border-radius:4px;background:{bg};color:#F87171;font-weight:700;font-size:12px;'>▼ {v:.2f}%</span>"
 
     def plain_num(v, fmt):
         if v is None or pd.isna(v):
@@ -344,16 +350,16 @@ def render_heatmap(items, show_valuation=True, show_risk_metrics=True):
         tds.append(f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{cell_pct_html(x.get('dist_200dma'))}</td>")
         if show_valuation:
             tds.append(f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;'>{plain_num(x.get('pe'), '{:.1f}')}</td>")
-        tds.append(f"<td style='color:#F3D58D;font-weight:600;min-width:240px;'>{stance_val}</td>")
-        body_rows.append("<tr>" + "".join(tds) + "</tr>")
+        tds.append(f"<td style='padding:7px 10px;'>{format_stance_cell(stance_val)}</td>")
+        body_rows.append("<tr style='border-bottom:1px solid rgba(255,255,255,0.05);'>" + "".join(tds) + "</tr>")
 
     th_html = "".join(
-        f"<th style='text-align:left;padding:10px 12px;color:#94A3B8;font-size:11px;text-transform:uppercase;letter-spacing:0.6px;border-bottom:1px solid rgba(255,255,255,0.12);white-space:nowrap;'>{h}</th>"
+        f"<th style='text-align:left;padding:8px 10px;color:#94A3B8;font-size:10.5px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid rgba(255,255,255,0.12);white-space:nowrap;'>{h}</th>"
         for h in headers
     )
     table_html = (
-        "<div style='overflow-x:auto;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:rgba(15,23,42,0.72);margin-bottom:16px;'>"
-        "<table style='width:100%;border-collapse:collapse;font-size:13px;'>"
+        "<div style='overflow-x:auto;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:rgba(15,23,42,0.72);margin-bottom:10px;'>"
+        "<table style='width:100%;border-collapse:collapse;font-size:12.5px;'>"
         f"<thead><tr>{th_html}</tr></thead>"
         f"<tbody>{''.join(body_rows)}</tbody>"
         "</table></div>"
@@ -363,117 +369,131 @@ def render_heatmap(items, show_valuation=True, show_risk_metrics=True):
 
 # --- MAIN TABS ---
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "📊 Equity, MF and Volatility",
-    "🧭 Sector and Return Charts",
+    "📊 Equity, MF & Volatility",
+    "🧭 Sector & Return Charts",
     "📰 News Headlines",
-    "🌍 Global, FX and Commodities",
+    "🌍 Global, FX & Commodities",
     "🏦 Indian Debt & AMFI MF",
 ])
 
 with tab1:
-    st.markdown("#### Indian Broad Equity, BSE SENSEX and MF Benchmarks")
-    render_heatmap(markets.get("indian_equity", []), show_valuation=True, show_risk_metrics=True)
+    view_slice = st.radio(
+        "Quick Focus",
+        ["All", "Broad Equity & MF", "Volatility", "Sectors"],
+        horizontal=True,
+    )
+    if view_slice in ["All", "Broad Equity & MF"]:
+        st.markdown("#### Indian Broad Equity, BSE SENSEX & MF Benchmarks")
+        render_heatmap(markets.get("indian_equity", []), show_valuation=True, show_risk_metrics=True)
 
-    st.markdown("#### Volatility and Fear Indices")
-    render_heatmap(markets.get("volatility_indices", []), show_valuation=False, show_risk_metrics=False)
+    if view_slice in ["All", "Volatility"]:
+        st.markdown("#### Volatility & Fear Indices")
+        render_heatmap(markets.get("volatility_indices", []), show_valuation=False, show_risk_metrics=False)
 
-    st.markdown("#### Indian Sectoral Benchmarks")
-    render_heatmap(markets.get("indian_sectors", []), show_valuation=True, show_risk_metrics=True)
+    if view_slice in ["All", "Sectors"]:
+        st.markdown("#### Indian Sectoral Benchmarks")
+        render_heatmap(markets.get("indian_sectors", []), show_valuation=True, show_risk_metrics=True)
 
 with tab2:
-    st.markdown("#### Year-on-Year Calendar Returns Since 1995")
-    yoy_candidates = [x for x in (markets.get("indian_equity", []) + markets.get("global_indices", [])) if x.get("yoy_returns")]
-    if yoy_candidates:
-        selected_yoy_name = st.selectbox(
-            "Select Broad Market Index for YoY Return History",
-            options=[x["name"] for x in yoy_candidates],
-            index=0,
-        )
-        chosen = next(x for x in yoy_candidates if x["name"] == selected_yoy_name)
-        yoy_dict = chosen.get("yoy_returns", {})
-        if yoy_dict:
-            yoy_df = pd.DataFrame([{"Year": k, "YoY Return %": v} for k, v in yoy_dict.items()])
-            yoy_fig = px.bar(
-                yoy_df,
-                x="Year",
-                y="YoY Return %",
-                color="YoY Return %",
-                color_continuous_scale=["#EF4444", "#475569", "#10B981"],
-                labels={"YoY Return %": f"{selected_yoy_name} YoY Return (%)"},
-                template="plotly_dark",
-                height=380,
+    chart_mode = st.radio(
+        "Chart View",
+        ["YoY Returns (Since 1995)", "Sector Leader vs. Laggard & Quadrant"],
+        horizontal=True,
+    )
+
+    if chart_mode == "YoY Returns (Since 1995)":
+        st.markdown("#### Year-on-Year Calendar Returns Since 1995")
+        yoy_candidates = [x for x in (markets.get("indian_equity", []) + markets.get("global_indices", [])) if x.get("yoy_returns")]
+        if yoy_candidates:
+            selected_yoy_name = st.selectbox(
+                "Select Broad Market Index",
+                options=[x["name"] for x in yoy_candidates],
+                index=0,
             )
-            yoy_fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
-            st.plotly_chart(yoy_fig, use_container_width=True)
-            st.dataframe(yoy_df.T, use_container_width=True)
+            chosen = next(x for x in yoy_candidates if x["name"] == selected_yoy_name)
+            yoy_dict = chosen.get("yoy_returns", {})
+            if yoy_dict:
+                yoy_df = pd.DataFrame([{"Year": k, "YoY Return %": v} for k, v in yoy_dict.items()])
+                yoy_fig = px.bar(
+                    yoy_df,
+                    x="Year",
+                    y="YoY Return %",
+                    color="YoY Return %",
+                    color_continuous_scale=["#EF4444", "#475569", "#10B981"],
+                    labels={"YoY Return %": f"{selected_yoy_name} YoY Return (%)"},
+                    template="plotly_dark",
+                    height=340,
+                )
+                yoy_fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
+                st.plotly_chart(yoy_fig, use_container_width=True)
+                st.dataframe(yoy_df.T, use_container_width=True)
+        else:
+            st.info("Click **🔄 Refresh Live Data & AI** once to pull historical YoY series since 1995.")
+
     else:
-        st.info("Click **🔄 Refresh Live Data & AI** once to pull historical YoY series since 1995.")
+        st.markdown("#### Sectoral Performance Breakup — Leader vs. Laggard Matrix")
+        sectors = markets.get("indian_sectors", [])
+        if sectors:
+            sdf = pd.DataFrame(sectors)
+            nifty_item = find_item("indian_equity", "Nifty 50")
+            nifty_3m = nifty_item.get("3M") if nifty_item and nifty_item.get("3M") is not None else 0.0
+            nifty_1y = nifty_item.get("1Y") if nifty_item and nifty_item.get("1Y") is not None else 0.0
 
-    st.divider()
+            matrix_rows = []
+            for x in sectors:
+                r1m = x.get("1M")
+                r3m = x.get("3M")
+                r1y = x.get("1Y")
+                rel_3m = round(r3m - nifty_3m, 2) if r3m is not None else None
+                rel_1y = round(r1y - nifty_1y, 2) if r1y is not None else None
 
-    st.markdown("#### Sectoral Performance Breakup — Leader vs. Laggard Matrix")
-    sectors = markets.get("indian_sectors", [])
-    if sectors:
-        sdf = pd.DataFrame(sectors)
-        nifty_item = find_item("indian_equity", "Nifty 50")
-        nifty_3m = nifty_item.get("3M") if nifty_item and nifty_item.get("3M") is not None else 0.0
-        nifty_1y = nifty_item.get("1Y") if nifty_item and nifty_item.get("1Y") is not None else 0.0
+                if rel_3m is not None and rel_3m >= 3.0 and (r1m is not None and r1m >= 0):
+                    bucket = "▲ Leader"
+                elif rel_3m is not None and rel_3m <= -3.0:
+                    bucket = "▼ Laggard"
+                else:
+                    bucket = "In-Line"
 
-        matrix_rows = []
-        for x in sectors:
-            r1m = x.get("1M")
-            r3m = x.get("3M")
-            r1y = x.get("1Y")
-            rel_3m = round(r3m - nifty_3m, 2) if r3m is not None else None
-            rel_1y = round(r1y - nifty_1y, 2) if r1y is not None else None
+                stance_val = x.get("bi_stance", "Hold | Balanced signals")
+                if " | " not in stance_val and x.get("bi_driver"):
+                    stance_val = f"{stance_val} | {x.get('bi_driver')}"
 
-            if rel_3m is not None and rel_3m >= 3.0 and (r1m is not None and r1m >= 0):
-                bucket = "▲ Leader"
-            elif rel_3m is not None and rel_3m <= -3.0:
-                bucket = "▼ Laggard"
-            else:
-                bucket = "In-Line"
+                matrix_rows.append({
+                    "Sector": x["name"],
+                    "1M": fmt_tri_pct(r1m),
+                    "3M": fmt_tri_pct(r3m),
+                    "1Y": fmt_tri_pct(r1y),
+                    "vs Nifty 3M": fmt_tri_pct(rel_3m),
+                    "vs Nifty 1Y": fmt_tri_pct(rel_1y),
+                    "RSI": f"{x['rsi_14']:.1f}" if x.get("rsi_14") is not None else "—",
+                    "Vol %": f"{x['volatility_1y']:.1f}%" if x.get("volatility_1y") is not None else "—",
+                    "P/E": f"{x['pe']:.1f}" if x.get("pe") is not None else "—",
+                    "Group": bucket,
+                    "BI stance | reasoning": stance_val,
+                    "_sort_3m": rel_3m if rel_3m is not None else -9999.0,
+                })
 
-            stance_val = x.get("bi_stance", "Hold | Balanced signals")
-            if " | " not in stance_val and x.get("bi_driver"):
-                stance_val = f"{stance_val} | {x.get('bi_driver')}"
+            mdf = pd.DataFrame(matrix_rows).sort_values("_sort_3m", ascending=False).drop(columns=["_sort_3m"])
+            st.dataframe(mdf, use_container_width=True, hide_index=True)
 
-            matrix_rows.append({
-                "Sector": x["name"],
-                "1M": fmt_tri_pct(r1m),
-                "3M": fmt_tri_pct(r3m),
-                "1Y": fmt_tri_pct(r1y),
-                "vs Nifty 3M": fmt_tri_pct(rel_3m),
-                "vs Nifty 1Y": fmt_tri_pct(rel_1y),
-                "RSI": f"{x['rsi_14']:.1f}" if x.get("rsi_14") is not None else "—",
-                "Vol %": f"{x['volatility_1y']:.1f}%" if x.get("volatility_1y") is not None else "—",
-                "P/E": f"{x['pe']:.1f}" if x.get("pe") is not None else "—",
-                "Group": bucket,
-                "BI stance | reasoning": stance_val,
-                "_sort_3m": rel_3m if rel_3m is not None else -9999.0,
-            })
-
-        mdf = pd.DataFrame(matrix_rows).sort_values("_sort_3m", ascending=False).drop(columns=["_sort_3m"])
-        st.dataframe(mdf, use_container_width=True, hide_index=True)
-
-        qdf = sdf.dropna(subset=["dist_200dma", "3M"])
-        if not qdf.empty:
-            fig = px.scatter(
-                qdf,
-                x="dist_200dma",
-                y="3M",
-                text="name",
-                color="bi_stance",
-                size=qdf["volatility_1y"].fillna(15),
-                labels={"dist_200dma": "Distance from 200-DMA (%)", "3M": "3-Month Return (%)"},
-                template="plotly_dark",
-                height=420,
-            )
-            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
-            fig.add_vline(x=0, line_dash="dash", line_color="#64748B")
-            fig.add_hline(y=0, line_dash="dash", line_color="#64748B")
-            fig.update_traces(textposition="top center")
-            st.plotly_chart(fig, use_container_width=True)
+            qdf = sdf.dropna(subset=["dist_200dma", "3M"])
+            if not qdf.empty:
+                fig = px.scatter(
+                    qdf,
+                    x="dist_200dma",
+                    y="3M",
+                    text="name",
+                    color="bi_stance",
+                    size=qdf["volatility_1y"].fillna(15),
+                    labels={"dist_200dma": "Distance from 200-DMA (%)", "3M": "3-Month Return (%)"},
+                    template="plotly_dark",
+                    height=380,
+                )
+                fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
+                fig.add_vline(x=0, line_dash="dash", line_color="#64748B")
+                fig.add_hline(y=0, line_dash="dash", line_color="#64748B")
+                fig.update_traces(textposition="top center")
+                st.plotly_chart(fig, use_container_width=True)
 
 with tab3:
     st.markdown("#### News Headlines")
@@ -489,10 +509,10 @@ with tab3:
             <div class="news-card">
               <span class="badge">{n.get('region', '')}</span>
               <span class="badge">{n.get('tag', '')}</span>
-              <a href="{n.get('link', '#')}" target="_blank" style="color:#F8FAFC;font-weight:600;text-decoration:none;font-size:15px;">
+              <a href="{n.get('link', '#')}" target="_blank" style="color:#F8FAFC;font-weight:600;text-decoration:none;font-size:14.5px;">
                 {n.get('title', '')}
               </a>
-              <div style="font-size:13px;color:#94A3B8;margin-top:6px;">
+              <div style="font-size:12.5px;color:#94A3B8;margin-top:4px;">
                 {n.get('impact', '')} <em>— {n.get('source', '')}</em>
               </div>
             </div>
@@ -504,7 +524,7 @@ with tab4:
     st.markdown("#### Global Markets")
     render_heatmap(markets.get("global_indices", []), show_valuation=True, show_risk_metrics=True)
 
-    st.markdown("#### Gold, Currencies, Commodities and Yields")
+    st.markdown("#### Gold, Currencies, Commodities & Yields")
     render_heatmap(markets.get("macro_commodities_fx", []), show_valuation=False, show_risk_metrics=True)
 
 with tab5:
@@ -523,64 +543,37 @@ with tab5:
     m3.metric("India 10Y G-Sec", f"{gsec_10y:.2f}%")
     m4.metric("10Y vs. Repo Spread", f"{sprd_tri} {spread:+.2f}%")
 
-    curve_df = pd.DataFrame([
-        {"Tenor": "RBI Repo", "Yield %": repo},
-        {"Tenor": "3M T-Bill", "Yield %": tbill_3m},
-        {"Tenor": "1Y G-Sec", "Yield %": gsec_1y},
-        {"Tenor": "5Y G-Sec", "Yield %": gsec_5y},
-        {"Tenor": "10Y G-Sec", "Yield %": gsec_10y},
-    ])
-    curve_fig = px.line(
-        curve_df,
-        x="Tenor",
-        y="Yield %",
-        markers=True,
-        labels={"Yield %": "Yield (%)"},
-        template="plotly_dark",
-        height=300,
-    )
-    curve_fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
-    st.plotly_chart(curve_fig, use_container_width=True)
+    c_left, c_right = st.columns([1, 1.3])
+    with c_left:
+        curve_df = pd.DataFrame([
+            {"Tenor": "RBI Repo", "Yield %": repo},
+            {"Tenor": "3M T-Bill", "Yield %": tbill_3m},
+            {"Tenor": "1Y G-Sec", "Yield %": gsec_1y},
+            {"Tenor": "5Y G-Sec", "Yield %": gsec_5y},
+            {"Tenor": "10Y G-Sec", "Yield %": gsec_10y},
+        ])
+        curve_fig = px.line(
+            curve_df,
+            x="Tenor",
+            y="Yield %",
+            markers=True,
+            labels={"Yield %": "Yield (%)"},
+            template="plotly_dark",
+            height=280,
+        )
+        curve_fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
+        st.plotly_chart(curve_fig, use_container_width=True)
 
-    st.markdown("#### Indian Debt MF Category Comparison (Duration, Credit & Role)")
-    domestic_matrix = pd.DataFrame([
-        {
-            "MF Category": "Liquid / Overnight",
-            "Duration Bucket": "Ultra-Short (<91d)",
-            "Credit Quality": "Sovereign / AAA",
-            "Rate Sensitivity": "Minimal",
-            "Primary Role": "Cash parking & short-term liquidity",
-        },
-        {
-            "MF Category": "Money Market / Low Duration",
-            "Duration Bucket": "Short (6m–1.5y)",
-            "Credit Quality": "AAA / Sovereign",
-            "Rate Sensitivity": "Low",
-            "Primary Role": "Accrual stability near repo/3M–1Y curve",
-        },
-        {
-            "MF Category": "Short Duration",
-            "Duration Bucket": "Short (1–3y)",
-            "Credit Quality": "AAA / Sovereign",
-            "Rate Sensitivity": "Low–Moderate",
-            "Primary Role": "Balanced accrual with modest duration",
-        },
-        {
-            "MF Category": "Corporate Bond / Banking & PSU",
-            "Duration Bucket": "Medium (2–5y)",
-            "Credit Quality": "High-Grade (AAA)",
-            "Rate Sensitivity": "Moderate",
-            "Primary Role": "Spread pickup over sovereign G-Secs",
-        },
-        {
-            "MF Category": "Gilt / Long Duration",
-            "Duration Bucket": "Long (7–10y+)",
-            "Credit Quality": "Sovereign",
-            "Rate Sensitivity": "High",
-            "Primary Role": "Duration / yield-move sensitivity; higher MTM swing",
-        },
-    ])
-    st.dataframe(domestic_matrix, use_container_width=True, hide_index=True)
+    with c_right:
+        st.markdown("##### Debt Category Duration & Role")
+        domestic_matrix = pd.DataFrame([
+            {"Category": "Liquid / Overnight", "Duration": "<91d", "Rate Risk": "Minimal", "Role": "Liquidity & cash"},
+            {"Category": "Money Market / Low Dur.", "Duration": "6m–1.5y", "Rate Risk": "Low", "Role": "Short accrual"},
+            {"Category": "Short Duration", "Duration": "1–3y", "Rate Risk": "Low–Mod", "Role": "Balanced accrual"},
+            {"Category": "Corporate / Banking & PSU", "Duration": "2–5y", "Rate Risk": "Moderate", "Role": "AAA spread pickup"},
+            {"Category": "Gilt / Long Duration", "Duration": "7–10y+", "Rate Risk": "High", "Role": "Yield-move / MTM"},
+        ])
+        st.dataframe(domestic_matrix, use_container_width=True, hide_index=True)
 
     st.markdown("#### Live AMFI Indian Debt & Liquid Mutual Fund NAVs")
     if amfi_debt_schemes:
