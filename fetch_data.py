@@ -35,6 +35,14 @@ VALUATION_PROXIES = {
     "^HSI": ["EWH"],
 }
 
+DEBT_AND_LIQUID_PROXIES = {
+    "Liquid MF Proxy (LiquidBeES)": {"ticker": "LIQUIDBEES.NS", "bucket": "Liquid", "duration_profile": "Ultra-Short (<91d)", "credit_profile": "Sovereign / AAA"},
+    "Money Market / T-Bill Proxy (US 3M)": {"ticker": "^IRX", "bucket": "Money Market", "duration_profile": "Short (~3M)", "credit_profile": "Sovereign"},
+    "Short / Medium Gilt & Bond Proxy (LtGiltBeES)": {"ticker": "LTGILTBEES.NS", "bucket": "Gilt / Sovereign", "duration_profile": "Medium-Long Duration", "credit_profile": "Sovereign"},
+    "US Treasury 7-10Y Bond Proxy (IEF)": {"ticker": "IEF", "bucket": "Global Sovereign Debt", "duration_profile": "Intermediate (~7.5y)", "credit_profile": "US Sovereign"},
+    "US Investment Grade Corp Proxy (LQD)": {"ticker": "LQD", "bucket": "Global Corporate Debt", "duration_profile": "Medium-Long (~8y)", "credit_profile": "Investment Grade"},
+}
+
 
 def clean_label(text):
     return re.sub(r"\s*\([^)]*\)", "", text).strip()
@@ -61,14 +69,47 @@ def calc_pct_return(series, trading_days):
     return round(((end / start) - 1) * 100, 2)
 
 
+def calc_yoy_history(close, start_year=1995):
+    """Computes calendar year-on-year returns from start_year (or earliest available year) through current year."""
+    if close is None or close.empty:
+        return {}
+    s = close.copy()
+    s.index = pd.to_datetime(s.index).tz_localize(None)
+    s = s.sort_index()
+
+    years = sorted(s.index.year.unique())
+    years = [y for y in years if y >= start_year]
+    yoy = {}
+
+    for idx, yr in enumerate(years):
+        yr_slice = s[s.index.year == yr]
+        if yr_slice.empty:
+            continue
+        end_val = float(yr_slice.iloc[-1])
+
+        # Base is prior year's last close if available; otherwise first close of that year
+        prev_slice = s[s.index.year == (yr - 1)]
+        if not prev_slice.empty:
+            start_val = float(prev_slice.iloc[-1])
+        elif idx == 0 and len(yr_slice) > 1:
+            start_val = float(yr_slice.iloc[0])
+        else:
+            continue
+
+        if start_val > 0:
+            yoy[str(yr)] = round(((end_val / start_val) - 1) * 100, 2)
+
+    return yoy
+
+
 def get_currency_symbol(name, ticker):
     if "VIX" in name.upper():
         return ""
-    if "Yield" in name or "TNX" in ticker:
+    if "Yield" in name or "TNX" in ticker or "IRX" in ticker:
         return "%"
     if "INR" in name or ticker.endswith(".NS") or ticker.endswith(".BO"):
         return "₹"
-    if "USD" in name or "Crude" in name or ticker in ["GC=F", "SI=F", "BZ=F", "EEM"]:
+    if "USD" in name or "Crude" in name or ticker in ["GC=F", "SI=F", "BZ=F", "EEM", "IEF", "LQD"]:
         return "$"
     return ""
 
@@ -86,19 +127,18 @@ def fetch_pe_ratio(ticker):
 
 def compute_vol_stance(price, dist_200dma, r_1d, r_1w):
     if r_1d is not None and r_1d >= 15:
-        return "Fear Spike Alert"
+        return "Fear Spike • Volatility Surge"
     if dist_200dma is not None and dist_200dma > 30:
-        return "Elevated Stress"
+        return "Elevated Stress • Above 200-DMA"
     if price < 14 and (r_1w is None or r_1w <= 2):
-        return "Low-Vol / Complacent"
-    return "Normal Regime"
+        return "Low-Vol • Calm Regime"
+    return "Normal Regime • Balanced Vol"
 
 
 def compute_bi_stance(pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, vol_1y, is_equity=True):
     score = 0.0
     drivers = []
 
-    # 1. Valuation (equities only)
     if is_equity and pe is not None:
         if pe < 18:
             score += 1.5
@@ -113,7 +153,6 @@ def compute_bi_stance(pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, 
             score -= 1.5
             drivers.append("Expensive P/E")
 
-    # 2. Trend & Drawdown Positioning
     if dist_200dma is not None:
         if -12 <= dist_200dma < 0 and r_1m is not None and r_1m > 0:
             score += 1.5
@@ -132,7 +171,6 @@ def compute_bi_stance(pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, 
         score -= 0.75
         drivers.append("Deep Off High")
 
-    # 3. Momentum Alignment (1M, 3M, 1Y)
     pos_horizons = sum(1 for x in [r_1m, r_3m, r_1y] if x is not None and x > 0)
     neg_horizons = sum(1 for x in [r_1m, r_3m, r_1y] if x is not None and x < 0)
     if pos_horizons == 3:
@@ -142,7 +180,6 @@ def compute_bi_stance(pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, 
         score -= 1.0
         drivers.append("Broad Downtrend")
 
-    # 4. Risk-Adjusted Efficiency (Sharpe & Volatility)
     if sharpe is not None:
         if sharpe >= 1.0:
             score += 0.75
@@ -166,11 +203,11 @@ def compute_bi_stance(pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, 
     else:
         label = "Avoid / Weak"
 
-    top_reasons = " + ".join(drivers[:2]) if drivers else "Balanced Signals"
-    return f"{label} ({top_reasons})"
+    top_reason = drivers[0] if drivers else "Balanced Signals"
+    return f"{label} • {top_reason}"
 
 
-def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mode="equity"):
+def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mode="equity", include_yoy=False):
     current_price = round(float(close.iloc[-1]), 2)
 
     r_1d = calc_pct_return(close, 1)
@@ -202,7 +239,7 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mod
             pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, ann_vol, is_equity=(mode == "equity")
         )
 
-    return {
+    out = {
         "name": name,
         "ticker": ticker,
         "currency": currency,
@@ -221,11 +258,15 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mod
         "pe": pe if mode == "equity" else None,
         "bi_stance": bi_stance,
     }
+    if include_yoy:
+        out["yoy_returns"] = calc_yoy_history(close, start_year=1995)
+    return out
 
 
-def analyze_ticker(name, ticker, category, rf_rate=0.068):
+def analyze_ticker(name, ticker, category, rf_rate=0.068, include_yoy=False):
     try:
-        hist = yf.Ticker(ticker).history(period="5y", auto_adjust=True)
+        period = "max" if include_yoy else "5y"
+        hist = yf.Ticker(ticker).history(period=period, auto_adjust=True)
         if hist.empty or len(hist) < 20:
             return None, None
 
@@ -243,10 +284,33 @@ def analyze_ticker(name, ticker, category, rf_rate=0.068):
             mode = "macro"
             pe_ratio = None
 
-        return analyze_series(clean_name, ticker, close, rf_rate, pe_ratio, currency, mode=mode), close
+        return analyze_series(
+            clean_name, ticker, close, rf_rate, pe_ratio, currency, mode=mode, include_yoy=include_yoy
+        ), close
     except Exception as e:
         print(f"Error fetching {name} ({ticker}): {e}")
         return None, None
+
+
+def fetch_debt_and_liquid(rf_rate=0.068):
+    results = []
+    for label, meta in DEBT_AND_LIQUID_PROXIES.items():
+        try:
+            hist = yf.Ticker(meta["ticker"]).history(period="5y", auto_adjust=True)
+            if hist.empty or len(hist) < 15:
+                continue
+            close = hist["Close"].dropna()
+            base = analyze_series(
+                label, meta["ticker"], close, rf_rate=rf_rate, pe=None,
+                currency=get_currency_symbol(label, meta["ticker"]), mode="macro", include_yoy=False
+            )
+            base["bucket"] = meta["bucket"]
+            base["duration_profile"] = meta["duration_profile"]
+            base["credit_profile"] = meta["credit_profile"]
+            results.append(base)
+        except Exception as e:
+            print(f"Debt proxy error ({label}): {e}")
+    return results
 
 
 def fetch_rss_news(rss_config, max_per_feed=6):
@@ -276,6 +340,7 @@ def run_fetch():
         "updated_at_ist": datetime.now(IST).strftime("%d %b %Y, %I:%M %p IST"),
         "macro_manual": cfg.get("macro_manual", {}),
         "markets": {},
+        "debt_liquid": [],
         "raw_news": {},
         "verified_news": [],
         "ai_strategist": {},
@@ -284,9 +349,10 @@ def run_fetch():
     series_cache = {}
     for category, tickers in cfg["benchmarks"].items():
         snapshot["markets"][category] = []
+        track_yoy = category in ["indian_equity", "global_indices"]
         for name, ticker in tickers.items():
             print(f"Fetching {name} ({ticker})...")
-            data, close = analyze_ticker(name, ticker, category, rf_rate)
+            data, close = analyze_ticker(name, ticker, category, rf_rate, include_yoy=track_yoy)
             if data:
                 snapshot["markets"][category].append(data)
                 series_cache[ticker] = close
@@ -302,6 +368,7 @@ def run_fetch():
             )
             snapshot["markets"].setdefault("macro_commodities_fx", []).insert(0, gold_inr_data)
 
+    snapshot["debt_liquid"] = fetch_debt_and_liquid(rf_rate=rf_rate)
     snapshot["raw_news"] = fetch_rss_news(cfg["rss_feeds"])
 
     os.makedirs("data", exist_ok=True)
