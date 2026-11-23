@@ -12,16 +12,16 @@ benchmarks:
     "US CBOE VIX": "^VIX"
 
   indian_sectors:
-    "Nifty Pharma": "^CNXPHARMA"
-    "Nifty Infrastructure": "^CNXINFRA"
     "Nifty Bank": "^NSEBANK"
-    "Nifty PSU Bank": "^CNXPSUBANK"
     "Nifty IT": "^CNXIT"
+    "Nifty Pharma": "^CNXPHARMA"
     "Nifty Auto": "^CNXAUTO"
     "Nifty FMCG": "^CNXFMCG"
-    "Nifty Metal": "^CNXMETAL"
-    "Nifty Energy": "^CNXENERGY"
+    "Nifty Metals": "^CNXMETAL"
     "Nifty Realty": "^CNXREALTY"
+    "Nifty Energy": "^CNXENERGY"
+    "Nifty PSU Bank": "^CNXPSUBANK"
+    "Nifty Infra": "^CNXINFRA"
 
   global_indices:
     "S&P 500": "^GSPC"
@@ -45,13 +45,57 @@ benchmarks:
     "US Dollar Index": "DX-Y.NYB"
     "US 10Y Treasury Yield": "^TNX"
 
+  reits_invits:
+    "Embassy Office Parks REIT": "EMBASSY.NS"
+    "Mindspace Business Parks REIT": "MINDSPACE.NS"
+    "Brookfield India REIT": "BIRET.NS"
+    "Nexus Select Trust REIT": "NXST.NS"
+    "IndiGrid InvIT": "INDIGRID.NS"
+    "PowerGrid InvIT": "PGINVIT.NS"
+
 macro_manual:
   rbi_repo_rate: 6.50
   india_3m_tbill_approx: 6.55
   india_1y_gsec_approx: 6.65
   india_5y_gsec_approx: 6.75
   india_10y_gsec_approx: 6.85
+  india_10y_gsec_prev_week: 6.78
   risk_free_rate_india: 0.068
+  # Inflation & Valuation 10-Year Historical Anchors
+  cpi_yoy_pct: 4.85
+  cpi_prev_pct: 5.10
+  wpi_yoy_pct: 2.10
+  wpi_prev_pct: 1.85
+  nifty_10y_avg_pe: 22.5
+  nifty_10y_avg_pb: 3.2
+  nifty_10y_avg_div_yield: 1.35
+  nifty_eps_growth_yoy: 11.4
+  # Institutional Flows Fallback (INR Crores) if NSE live endpoint blocks cloud IP
+  fpi_net_cr: -1850.0
+  dii_net_cr: 2410.0
+  fpi_consecutive_sell_days: 3
+
+amfi_monthly_manual:
+  report_month: "Oct 2026"
+  monthly_sip_inflow_cr: 25320
+  equity_net_inflow_cr: 34850
+  industry_aum_lakh_cr: 68.5
+  total_folios_cr: 21.6
+  top_category_inflow: "Flexi Cap & Sectoral/Thematic"
+
+nfo_watchlist:
+  - name: "Generic Narrow Thematic / NFO Momentum Fund"
+    category: "Thematic Equity"
+    flag: "Skip"
+    reason: "High overlap with existing diversified funds; wait for 1Y track record."
+  - name: "Nifty 500 Quality 50 Index Fund"
+    category: "Passive Factor"
+    flag: "Selective"
+    reason: "Low-cost factor exposure if portfolio lacks quality tilt."
+  - name: "Target Maturity SDL / G-Sec 2031 Fund"
+    category: "Debt Passive"
+    flag: "Consider"
+    reason: "Locks in sovereign yield curve roll-down for 5Y+ horizon."
 
 rss_feeds:
   india:
@@ -70,3 +114,8 @@ rss_feeds:
       url: "https://www.investing.com/rss/news_14.rss"
     - name: "Yahoo Finance Global"
       url: "https://finance.yahoo.com/news/rssindex"
+  regulatory:
+    - name: "SEBI Press Releases & Circulars"
+      url: "https://www.sebi.gov.in/sebirss.xml"
+    - name: "LiveMint Mutual Funds"
+      url: "https://www.livemint.com/rss/mutual-funds"
