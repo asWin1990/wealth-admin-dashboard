@@ -122,7 +122,7 @@ with st.sidebar:
     st.divider()
 
     if st.button("🔄 Refresh Live Data & AI", use_container_width=True, type="primary"):
-        with st.spinner("Pulling live prices, YoY history, AMFI Debt NAVs & News Headlines..."):
+        with st.spinner("Pulling live prices, RSI, YoY history, AMFI Debt NAVs & News..."):
             run_fetch()
             if os.environ.get("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY", None):
                 if "GEMINI_API_KEY" not in os.environ and "GEMINI_API_KEY" in st.secrets:
@@ -249,10 +249,10 @@ with st.expander("📘 AURA AI guide — Jargon Glossary, CAGR Methodology and B
     with g2:
         st.markdown(
             """
-            * **vs 52W High:** Percentage gap below the 52-week peak (`-15%` means 15% below the 1-year high).
-            * **vs 200-DMA:** Percentage distance above or below the 200-day moving average trend line.
+            * **RSI (14):** 14-day Relative Strength Index (`0–100`) on return/equity series. Above `70–75` signals overbought stretch; below `30–35` signals oversold pullback (omitted on VIX indices).
+            * **vs 52W High & vs 200-DMA:** Percentage distance below the 52-week peak and above/below the 200-day moving average.
             * **P/E:** Trailing Price-to-Earnings multiple (sourced directly or via liquid ETF proxies for equity benchmarks).
-            * **BI Stance & Driver:** Concise action tag (`Strong Buy`, `Accumulate`, `Hold`, `Trim`, `Avoid`) paired with its primary valuation, trend, momentum, or volatility driver.
+            * **BI Stance & Driver:** Concise action tag (`Strong Buy`, `Accumulate`, `Hold`, `Trim`, `Avoid`) paired with its primary valuation, trend, RSI/momentum, or volatility driver.
             """
         )
 
@@ -290,6 +290,7 @@ def render_heatmap(items, show_valuation=True, show_risk_metrics=True):
         }
         if show_risk_metrics:
             row["Sharpe"] = x.get("sharpe_1y")
+            row["RSI"] = x.get("rsi_14")
         row["vs 52W High"] = x.get("from_52w_high")
         row["vs 200-DMA"] = x.get("dist_200dma")
         if show_valuation:
@@ -317,6 +318,7 @@ def render_heatmap(items, show_valuation=True, show_risk_metrics=True):
     fmt_map = {c: "{:+.2f}%" for c in ret_cols} | {"Vol %": "{:.1f}%"}
     if show_risk_metrics:
         fmt_map["Sharpe"] = "{:.2f}"
+        fmt_map["RSI"] = "{:.1f}"
     if show_valuation:
         fmt_map["P/E"] = "{:.1f}"
 
@@ -388,7 +390,6 @@ with tab2:
     if sectors:
         sdf = pd.DataFrame(sectors)
         nifty_item = find_item("indian_equity", "Nifty 50")
-        nifty_1m = nifty_item.get("1M") if nifty_item and nifty_item.get("1M") is not None else 0.0
         nifty_3m = nifty_item.get("3M") if nifty_item and nifty_item.get("3M") is not None else 0.0
         nifty_1y = nifty_item.get("1Y") if nifty_item and nifty_item.get("1Y") is not None else 0.0
 
@@ -414,6 +415,7 @@ with tab2:
                 "1Y": r1y,
                 "vs Nifty 3M": rel_3m,
                 "vs Nifty 1Y": rel_1y,
+                "RSI": x.get("rsi_14"),
                 "Vol %": x.get("volatility_1y"),
                 "P/E": x.get("pe"),
                 "Group": bucket,
@@ -429,6 +431,7 @@ with tab2:
                 "1Y": "{:+.2f}%",
                 "vs Nifty 3M": "{:+.2f}%",
                 "vs Nifty 1Y": "{:+.2f}%",
+                "RSI": "{:.1f}",
                 "Vol %": "{:.1f}%",
                 "P/E": "{:.1f}",
             }, na_rep="—"),
