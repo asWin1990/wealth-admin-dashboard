@@ -1,11 +1,11 @@
 benchmarks:
   indian_equity:
-    "Nifty 50 (Large Cap)": "^NSEI"
+    "Nifty 50": "^NSEI"
     "BSE SENSEX": "^BSESN"
     "Nifty Next 50": "^NSMIDCP"
     "Nifty Midcap 150": "^NSEMDCP150"
     "Nifty Smallcap 250": "HDFCSML250.NS"
-    "Nifty 500 (Flexi/Multi)": "^CRSLDX"
+    "Nifty 500": "^CRSLDX"
 
   volatility_indices:
     "India VIX": "^INDIAVIX"
@@ -24,29 +24,32 @@ benchmarks:
     "Nifty Realty": "^CNXREALTY"
 
   global_indices:
-    "S&P 500 (New York)": "^GSPC"
-    "Dow Jones (New York)": "^DJI"
-    "Nasdaq 100 (New York)": "^NDX"
-    "FTSE 100 (London)": "^FTSE"
-    "CAC 40 (Paris)": "^FCHI"
-    "Nikkei 225 (Tokyo)": "^N225"
-    "DAX (Frankfurt)": "^GDAXI"
-    "Hang Seng (Hong Kong)": "^HSI"
+    "S&P 500": "^GSPC"
+    "Dow Jones": "^DJI"
+    "Nasdaq 100": "^NDX"
+    "FTSE 100": "^FTSE"
+    "CAC 40": "^FCHI"
+    "Nikkei 225": "^N225"
+    "DAX": "^GDAXI"
+    "Hang Seng": "^HSI"
     "MSCI Emerging Markets": "EEM"
 
   macro_commodities_fx:
-    "Gold (USD/oz)": "GC=F"
-    "Silver (USD/oz)": "SI=F"
+    "Gold USD/oz": "GC=F"
+    "Silver USD/oz": "SI=F"
     "Brent Crude": "BZ=F"
     "USD / INR": "INR=X"
     "EUR / INR": "EURINR=X"
     "GBP / INR": "GBPINR=X"
     "JPY / INR": "JPYINR=X"
-    "US Dollar Index (DXY)": "DX-Y.NYB"
+    "US Dollar Index": "DX-Y.NYB"
     "US 10Y Treasury Yield": "^TNX"
 
 macro_manual:
   rbi_repo_rate: 6.50
+  india_3m_tbill_approx: 6.55
+  india_1y_gsec_approx: 6.65
+  india_5y_gsec_approx: 6.75
   india_10y_gsec_approx: 6.85
   risk_free_rate_india: 0.068
 
