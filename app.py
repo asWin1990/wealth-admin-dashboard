@@ -1,5 +1,7 @@
 import os
 import json
+import time
+from datetime import datetime, timezone, timedelta
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -8,6 +10,10 @@ import streamlit as st
 from fetch_data import run_fetch
 from ai_analyst import run_ai_analysis
 from notifier import build_html_email
+
+IST = timezone(timedelta(hours=5, minutes=30))
+SNAPSHOT_PATH = "data/market_snapshot.json"
+DEFAULT_STALE_HOURS = 6
 
 st.set_page_config(
     page_title="AURA BI AGENT | Market Intelligence Terminal",
@@ -64,6 +70,21 @@ st.markdown(
         color: #F3D58D; font-size: 10.5px; font-weight: 600; margin-left: 8px;
         animation: pulseGold 2.8s infinite;
     }
+    .status-fresh {
+        display: inline-block; padding: 2px 9px; border-radius: 999px;
+        background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(52, 211, 153, 0.45);
+        color: #34D399; font-size: 10.5px; font-weight: 700; margin-left: 6px;
+    }
+    .status-aging {
+        display: inline-block; padding: 2px 9px; border-radius: 999px;
+        background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(251, 191, 36, 0.45);
+        color: #FBBF24; font-size: 10.5px; font-weight: 700; margin-left: 6px;
+    }
+    .status-stale {
+        display: inline-block; padding: 2px 9px; border-radius: 999px;
+        background: rgba(239, 68, 68, 0.18); border: 1px solid rgba(248, 113, 113, 0.5);
+        color: #F87171; font-size: 10.5px; font-weight: 700; margin-left: 6px;
+    }
 
     .kpi-card {
         background: rgba(17, 25, 40, 0.72);
@@ -108,25 +129,126 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-SNAPSHOT_PATH = "data/market_snapshot.json"
-snapshot = None
-if os.path.exists(SNAPSHOT_PATH):
-    with open(SNAPSHOT_PATH, "r", encoding="utf-8") as f:
-        snapshot = json.load(f)
 
+def parse_snapshot_dt(snap):
+    if not snap:
+        return None
+    raw_str = snap.get("updated_at_ist", "")
+    for fmt in ("%d %b %Y, %I:%M %p IST", "%d %b %Y, %H:%M IST"):
+        try:
+            dt = datetime.strptime(raw_str, fmt)
+            return dt.replace(tzinfo=IST)
+        except ValueError:
+            continue
+    if os.path.exists(SNAPSHOT_PATH):
+        mtime = os.path.getmtime(SNAPSHOT_PATH)
+        return datetime.fromtimestamp(mtime, tz=IST)
+    return None
+
+
+def get_freshness_info(snap, stale_hours=DEFAULT_STALE_HOURS):
+    now_ist = datetime.now(IST)
+    dt = parse_snapshot_dt(snap)
+    if not dt:
+        return "UNKNOWN", "No timestamp available", "status-stale"
+
+    age_delta = now_ist - dt
+    age_hours = max(0.0, age_delta.total_seconds() / 3600.0)
+
+    if age_hours < 1:
+        age_label = f"{max(1, int(age_delta.total_seconds() // 60))}m ago"
+    elif age_hours < 24:
+        age_label = f"{age_hours:.1f}h ago"
+    else:
+        age_label = f"{age_delta.days}d {(age_delta.seconds // 3600)}h ago"
+
+    if age_hours <= stale_hours:
+        return "LIVE / FRESH", f"Fetched {age_label}", "status-fresh"
+    elif age_hours <= 24:
+        return "AGING DATA", f"Last fetched {age_label} (exceeds {stale_hours}h window)", "status-aging"
+    else:
+        return "STALE / NOT NEWLY UPDATED", f"Last fetched {age_label} — showing prior snapshot", "status-stale"
+
+
+def execute_data_refresh(prev_snap=None):
+    prev_updated = (prev_snap or {}).get("updated_at_ist")
+    prev_nifty = None
+    for x in (prev_snap or {}).get("markets", {}).get("indian_equity", []):
+        if "nifty 50" in x.get("name", "").lower():
+            prev_nifty = x.get("price")
+            break
+
+    try:
+        new_snap = run_fetch()
+        if os.environ.get("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY", None):
+            if "GEMINI_API_KEY" not in os.environ and "GEMINI_API_KEY" in st.secrets:
+                os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
+        run_ai_analysis()
+
+        with open(SNAPSHOT_PATH, "r", encoding="utf-8") as f:
+            final_snap = json.load(f)
+
+        new_nifty = None
+        for x in final_snap.get("markets", {}).get("indian_equity", []):
+            if "nifty 50" in x.get("name", "").lower():
+                new_nifty = x.get("price")
+                break
+
+        has_any_data = any(bool(v) for v in final_snap.get("markets", {}).values())
+        unchanged_prices = (prev_nifty is not None and new_nifty == prev_nifty and prev_updated == final_snap.get("updated_at_ist"))
+
+        if not has_any_data:
+            st.session_state["fetch_notice"] = ("warning", "Auto-fetch ran, but market feeds returned empty; displaying existing snapshot if available.")
+        elif unchanged_prices:
+            st.session_state["fetch_notice"] = ("info", f"Fetch completed at {final_snap.get('updated_at_ist')}; underlying prices/timestamps match the previous fetch.")
+        else:
+            st.session_state["fetch_notice"] = ("success", f"New data fetched at {final_snap.get('updated_at_ist')}.")
+        return final_snap
+    except Exception as e:
+        st.session_state["fetch_notice"] = ("error", f"Auto-fetch failed ({e}). Showing last saved data.")
+        return prev_snap
+
+
+def load_snapshot():
+    if os.path.exists(SNAPSHOT_PATH):
+        with open(SNAPSHOT_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return None
+
+
+# --- SESSION STATE FOR AUTO-FETCH ---
+if "auto_fetch_enabled" not in st.session_state:
+    st.session_state["auto_fetch_enabled"] = True
+if "stale_threshold_hours" not in st.session_state:
+    st.session_state["stale_threshold_hours"] = DEFAULT_STALE_HOURS
+if "last_auto_check_ts" not in st.session_state:
+    st.session_state["last_auto_check_ts"] = 0.0
+
+snapshot = load_snapshot()
+
+# --- SIDEBAR CONTROLS ---
 with st.sidebar:
     st.markdown("### ⚡ AURA BI AGENT")
     st.caption("Autonomous Market & Valuation Intelligence")
     st.divider()
 
-    if st.button("🔄 Refresh Live Data & AI", use_container_width=True, type="primary"):
-        with st.spinner("Pulling live prices, RSI, YoY history, AMFI Debt NAVs & News..."):
-            run_fetch()
-            if os.environ.get("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY", None):
-                if "GEMINI_API_KEY" not in os.environ and "GEMINI_API_KEY" in st.secrets:
-                    os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
-            run_ai_analysis()
-        st.success("Terminal updated!")
+    st.session_state["auto_fetch_enabled"] = st.toggle(
+        "🤖 Auto-Fetch When Stale",
+        value=st.session_state["auto_fetch_enabled"],
+        help="Automatically pulls fresh data when the snapshot passes the freshness threshold.",
+    )
+    st.session_state["stale_threshold_hours"] = st.slider(
+        "Freshness Window (Hours)",
+        min_value=1,
+        max_value=24,
+        value=st.session_state["stale_threshold_hours"],
+        step=1,
+    )
+
+    manual_refresh = st.button("🔄 Refresh Live Data & AI Now", use_container_width=True, type="primary")
+    if manual_refresh:
+        with st.spinner("Fetching live market data, RSI, YoY history, AMFI NAVs & AI brief..."):
+            snapshot = execute_data_refresh(snapshot)
         st.rerun()
 
     if snapshot:
@@ -141,16 +263,28 @@ with st.sidebar:
         st.caption("Open downloaded file in browser and press Ctrl+P to save as PDF.")
 
     st.divider()
-    st.caption("Auto-Schedule: 8:30 AM and 4:30 PM IST, Mon–Fri")
+    st.caption("Scheduled: 8:30 AM & 4:30 PM IST (Mon–Fri) + Auto-Fetch")
+
+# --- AUTOMATIC FETCH TRIGGER WHEN SNAPSHOT IS MISSING OR STALE ---
+now_epoch = time.time()
+if st.session_state["auto_fetch_enabled"] and (now_epoch - st.session_state["last_auto_check_ts"] > 120):
+    st.session_state["last_auto_check_ts"] = now_epoch
+    _, _, status_cls = get_freshness_info(snapshot, st.session_state["stale_threshold_hours"])
+    if snapshot is None or status_cls in ("status-aging", "status-stale"):
+        with st.spinner("Snapshot stale or missing — automatically fetching latest market data..."):
+            snapshot = execute_data_refresh(snapshot)
+        st.rerun()
 
 if not snapshot:
-    st.warning("No snapshot found yet. Click **🔄 Refresh Live Data & AI** in the sidebar.")
+    st.warning("No snapshot available yet. Click **🔄 Refresh Live Data & AI Now** in the sidebar.")
     st.stop()
 
 ai = snapshot.get("ai_strategist", {})
 macro = snapshot.get("macro_manual", {})
 markets = snapshot.get("markets", {})
 amfi_debt_schemes = snapshot.get("amfi_debt_schemes", [])
+last_fetched_str = snapshot.get("updated_at_ist", "Unknown")
+fresh_tag, fresh_detail, fresh_css = get_freshness_info(snapshot, st.session_state["stale_threshold_hours"])
 
 
 def format_price(item):
@@ -222,18 +356,34 @@ def rsi_badge_html(v):
     return f"<span style='display:inline-block;padding:1px 5px;border-radius:4px;background:rgba(148,163,184,0.12);color:#E2E8F0;font-size:11.5px;'>{v:.1f}</span>"
 
 
-# --- HEADER ---
+# --- HEADER + LAST FETCHED & FRESHNESS SIGNAL ---
 regime = ai.get("market_regime", "Awaiting AI Sync")
 st.markdown(
     f"""
     <div class="brand-title">AURA BI AGENT</div>
     <div class="brand-sub">
-        Updated: <strong>{snapshot.get('updated_at_ist', 'N/A')}</strong>
+        Last Fetched: <strong>{last_fetched_str}</strong> ({fresh_detail})
+        <span class="{fresh_css}">{fresh_tag}</span>
         <span class="regime-pill">REGIME: {regime.upper()}</span>
     </div>
     """,
     unsafe_allow_html=True,
 )
+
+if "fetch_notice" in st.session_state and st.session_state["fetch_notice"]:
+    kind, msg = st.session_state.pop("fetch_notice")
+    getattr(st, kind)(msg)
+
+if fresh_css == "status-stale":
+    st.warning(
+        f"⚠️ **Data Not Newly Updated:** Last successful fetch was **{last_fetched_str}** ({fresh_detail}). "
+        "Enable **Auto-Fetch When Stale** in the sidebar or click **🔄 Refresh Live Data & AI Now**."
+    )
+elif fresh_css == "status-aging":
+    st.info(
+        f"🕒 **Aging Snapshot:** Last fetched at **{last_fetched_str}** ({fresh_detail}). "
+        "Click **🔄 Refresh Live Data & AI Now** if you need an immediate sync."
+    )
 
 # --- TOP KPI PULSE STRIP ---
 def find_item(cat, keyword):
@@ -320,7 +470,7 @@ if ai:
 # --- COMPACT HEATMAP TABLE RENDERER ---
 def render_heatmap(items, show_valuation=True, show_risk_metrics=True):
     if not items:
-        st.info("No data available. Click **🔄 Refresh Live Data & AI** in the sidebar.")
+        st.info("No data available. Click **🔄 Refresh Live Data & AI Now** in the sidebar.")
         return
 
     headers = ["Asset", "Price", "1D", "1W", "1M", "3M", "1Y", "3Y", "5Y", "Vol"]
@@ -468,7 +618,7 @@ with tab2:
                 )
                 st.plotly_chart(hm_fig, use_container_width=True)
         else:
-            st.info("Click **🔄 Refresh Live Data & AI** once to pull historical YoY series since 1995.")
+            st.info("Click **🔄 Refresh Live Data & AI Now** once to pull historical YoY series since 1995.")
 
     else:
         st.markdown("#### Sectoral Performance Breakup — Leader vs. Laggard Heatmap")
@@ -591,7 +741,7 @@ with tab3:
     filter_reg = st.radio("Filter Region", ["ALL", "INDIA", "GLOBAL"], horizontal=True)
     news_list = snapshot.get("verified_news", [])
     if not news_list:
-        st.info("Click **🔄 Refresh Live Data & AI** in the sidebar to load today's News Headlines.")
+        st.info("No news headlines in the current snapshot yet. Click **🔄 Refresh Live Data & AI Now** to fetch.")
     for n in news_list:
         if filter_reg != "ALL" and n.get("region", "").upper() != filter_reg:
             continue
@@ -682,6 +832,6 @@ with tab5:
         )
     else:
         st.caption(
-            "AMFI live NAV feed returned empty on this run (often due to AMFI portal firewall/timeout on cloud servers). "
-            "Sovereign yield benchmarks and category duration profiles above remain active; click Refresh to retry AMFI NAVs."
+            "AMFI live NAV feed returned empty on this run (often due to AMFI portal restrictions on cloud servers). "
+            "Sovereign yield benchmarks and category duration profiles above remain active."
         )
