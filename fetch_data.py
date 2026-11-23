@@ -6,9 +6,11 @@ import feedparser
 import numpy as np
 import pandas as pd
 import yfinance as yf
+import requests
 from datetime import datetime, timezone, timedelta
 
 IST = timezone(timedelta(hours=5, minutes=30))
+AMFI_NAV_URL = "https://portal.amfiindia.com/spages/NAVAll.txt"
 
 VALUATION_PROXIES = {
     "^NSEI": ["NIFTYBEES.NS"],
@@ -35,48 +37,12 @@ VALUATION_PROXIES = {
     "^HSI": ["EWH"],
 }
 
-# Reliable fixed-income & cash/rate proxies on Yahoo Finance
-DEBT_AND_LIQUID_PROXIES = [
-    {
-        "name": "US 3M T-Bill Rate (^IRX)",
-        "ticker": "^IRX",
-        "bucket": "Liquid / Money Market",
-        "duration_profile": "Ultra-Short (<3M)",
-        "credit_profile": "Sovereign Cash",
-        "currency": "%",
-    },
-    {
-        "name": "US 1–3Y Treasury ETF (SHY)",
-        "ticker": "SHY",
-        "bucket": "Short Duration Debt",
-        "duration_profile": "Short (~1.8y)",
-        "credit_profile": "Sovereign",
-        "currency": "$",
-    },
-    {
-        "name": "US 7–10Y Treasury ETF (IEF)",
-        "ticker": "IEF",
-        "bucket": "Medium-Long Gilt / Sov",
-        "duration_profile": "Intermediate (~7.5y)",
-        "credit_profile": "Sovereign",
-        "currency": "$",
-    },
-    {
-        "name": "US 20+Y Treasury ETF (TLT)",
-        "ticker": "TLT",
-        "bucket": "Long Duration Gilt",
-        "duration_profile": "Long (~16.5y)",
-        "credit_profile": "Sovereign",
-        "currency": "$",
-    },
-    {
-        "name": "US Inv. Grade Corp ETF (LQD)",
-        "ticker": "LQD",
-        "bucket": "Corporate / Credit Debt",
-        "duration_profile": "Medium-Long (~8y)",
-        "credit_profile": "Investment Grade",
-        "currency": "$",
-    },
+AMFI_DEBT_BUCKETS = [
+    {"bucket": "Liquid", "keywords": ["liquid fund"], "duration": "Ultra-Short (<91d)", "credit": "Sovereign / AAA"},
+    {"bucket": "Money Market", "keywords": ["money market"], "duration": "Short (<1y)", "credit": "AAA / Commercial"},
+    {"bucket": "Short Duration", "keywords": ["short duration", "short term"], "duration": "Short (1–3y)", "credit": "AAA / Sovereign"},
+    {"bucket": "Corporate Bond", "keywords": ["corporate bond"], "duration": "Medium (2–5y)", "credit": "High-Grade AAA"},
+    {"bucket": "Gilt / Long Duration", "keywords": ["gilt fund", "long duration"], "duration": "Long (7–10y+)", "credit": "Sovereign"},
 ]
 
 
@@ -138,11 +104,11 @@ def calc_yoy_history(close, start_year=1995):
 def get_currency_symbol(name, ticker):
     if "VIX" in name.upper():
         return ""
-    if "Yield" in name or "TNX" in ticker or "IRX" in ticker:
+    if "Yield" in name or "TNX" in ticker:
         return "%"
     if "INR" in name or ticker.endswith(".NS") or ticker.endswith(".BO"):
         return "₹"
-    if "USD" in name or "Crude" in name or ticker in ["GC=F", "SI=F", "BZ=F", "EEM", "SHY", "IEF", "TLT", "LQD"]:
+    if "USD" in name or "Crude" in name or ticker in ["GC=F", "SI=F", "BZ=F", "EEM"]:
         return "$"
     return ""
 
@@ -326,94 +292,13 @@ def analyze_ticker(name, ticker, category, rf_rate=0.068, include_yoy=False):
         return None, None
 
 
-def fetch_debt_and_liquid(rf_rate=0.068):
-    results = []
-    for item in DEBT_AND_LIQUID_PROXIES:
-        try:
-            hist = yf.Ticker(item["ticker"]).history(period="5y", auto_adjust=True)
-            if hist is None or hist.empty:
-                continue
-            close = hist["Close"].dropna()
-            if len(close) < 5:
-                continue
-            base = analyze_series(
-                item["name"], item["ticker"], close, rf_rate=rf_rate, pe=None,
-                currency=item["currency"], mode="macro", include_yoy=False
-            )
-            base["bucket"] = item["bucket"]
-            base["duration_profile"] = item["duration_profile"]
-            base["credit_profile"] = item["credit_profile"]
-            results.append(base)
-        except Exception as e:
-            print(f"Debt proxy error ({item['name']}): {e}")
-    return results
+def fetch_amfi_debt_schemes(per_bucket=3):
+    """Fetches sample live Indian Mutual Fund NAVs directly from AMFI NAVAll.txt."""
+    schemes = []
+    try:
+        resp = requests.get(AMFI_NAV_URL, timeout=20)
+        resp.raise_for_status()
+        lines = resp.text.splitlines()
 
-
-def fetch_rss_news(rss_config, max_per_feed=6):
-    news_pool = {"india": [], "global": []}
-    for region in ["india", "global"]:
-        for source in rss_config.get(region, []):
-            try:
-                feed = feedparser.parse(source["url"])
-                for entry in feed.entries[:max_per_feed]:
-                    news_pool[region].append({
-                        "source": source["name"],
-                        "title": entry.get("title", "").strip(),
-                        "link": entry.get("link", ""),
-                        "published": entry.get("published", ""),
-                        "region": region.upper(),
-                    })
-            except Exception as e:
-                print(f"RSS error ({source['name']}): {e}")
-    return news_pool
-
-
-def run_fetch():
-    cfg = load_config()
-    rf_rate = cfg.get("macro_manual", {}).get("risk_free_rate_india", 0.068)
-
-    snapshot = {
-        "updated_at_ist": datetime.now(IST).strftime("%d %b %Y, %I:%M %p IST"),
-        "macro_manual": cfg.get("macro_manual", {}),
-        "markets": {},
-        "debt_liquid": [],
-        "raw_news": {},
-        "verified_news": [],
-        "ai_strategist": {},
-    }
-
-    series_cache = {}
-    for category, tickers in cfg["benchmarks"].items():
-        snapshot["markets"][category] = []
-        track_yoy = category in ["indian_equity", "global_indices"]
-        for name, ticker in tickers.items():
-            print(f"Fetching {name} ({ticker})...")
-            data, close = analyze_ticker(name, ticker, category, rf_rate, include_yoy=track_yoy)
-            if data:
-                snapshot["markets"][category].append(data)
-                series_cache[ticker] = close
-
-    if "GC=F" in series_cache and "INR=X" in series_cache:
-        gold_usd = series_cache["GC=F"].tz_localize(None)
-        usdinr = series_cache["INR=X"].tz_localize(None)
-        aligned = pd.concat([gold_usd.rename("gold"), usdinr.rename("fx")], axis=1).ffill().dropna()
-        if len(aligned) > 20:
-            gold_inr_10g = (aligned["gold"] / 31.1034768) * aligned["fx"] * 10
-            gold_inr_data = analyze_series(
-                "Gold INR / 10g", "GOLD_INR_10G", gold_inr_10g, rf_rate, currency="₹", mode="macro"
-            )
-            snapshot["markets"].setdefault("macro_commodities_fx", []).insert(0, gold_inr_data)
-
-    snapshot["debt_liquid"] = fetch_debt_and_liquid(rf_rate=rf_rate)
-    snapshot["raw_news"] = fetch_rss_news(cfg["rss_feeds"])
-
-    os.makedirs("data", exist_ok=True)
-    with open("data/market_snapshot.json", "w", encoding="utf-8") as f:
-        json.dump(snapshot, f, indent=2)
-
-    print("Saved data/market_snapshot.json successfully.")
-    return snapshot
-
-
-if __name__ == "__main__":
-    run_fetch()
+        found_counts = {b["bucket"]: 0 for b in AMFI_DEBT_BUCKETS}
+        for line in lines:
