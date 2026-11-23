@@ -1,5 +1,6 @@
 import os
 import json
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -534,7 +535,6 @@ with tab2:
                 unsafe_allow_html=True,
             )
 
-            # Simple 3-Bucket Sector Scatter (Buy / Hold / Sell + Human Hover)
             q_items = []
             for x in sectors:
                 if x.get("dist_200dma") is not None and x.get("3M") is not None:
@@ -651,4 +651,37 @@ with tab5:
             template="plotly_dark",
             height=260,
         )
-        curve_fig.update_layout(paper_bgcolor="rgba(0,0,
+        curve_fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
+        st.plotly_chart(curve_fig, use_container_width=True)
+
+    with c_right:
+        st.markdown("##### Debt Category Duration & Role")
+        domestic_matrix = pd.DataFrame([
+            {"Category": "Liquid / Overnight", "Duration": "<91d", "Rate Risk": "Minimal", "Role": "Liquidity & cash"},
+            {"Category": "Money Market / Low Dur.", "Duration": "6m–1.5y", "Rate Risk": "Low", "Role": "Short accrual"},
+            {"Category": "Short Duration", "Duration": "1–3y", "Rate Risk": "Low–Mod", "Role": "Balanced accrual"},
+            {"Category": "Corporate / Banking & PSU", "Duration": "2–5y", "Rate Risk": "Moderate", "Role": "AAA spread pickup"},
+            {"Category": "Gilt / Long Duration", "Duration": "7–10y+", "Rate Risk": "High", "Role": "Yield-move / MTM"},
+        ])
+        st.dataframe(domestic_matrix, use_container_width=True, hide_index=True)
+
+    st.markdown("#### AMFI Indian Debt & Liquid Mutual Fund NAVs")
+    if amfi_debt_schemes:
+        adf = pd.DataFrame(amfi_debt_schemes).rename(columns={
+            "scheme_name": "AMFI Scheme (Growth)",
+            "bucket": "Category",
+            "duration": "Duration",
+            "credit": "Credit",
+            "nav": "NAV (₹)",
+            "nav_date": "NAV Date",
+        })
+        st.dataframe(
+            adf.style.format({"NAV (₹)": "₹{:.4f}"}),
+            use_container_width=True,
+            hide_index=True,
+        )
+    else:
+        st.caption(
+            "AMFI live NAV feed returned empty on this run (often due to AMFI portal firewall/timeout on cloud servers). "
+            "Sovereign yield benchmarks and category duration profiles above remain active; click Refresh to retry AMFI NAVs."
+        )
