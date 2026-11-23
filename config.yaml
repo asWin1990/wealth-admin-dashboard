@@ -1,27 +1,15 @@
-# Your current advisory stances (Overweight / Neutral / Underweight)
-advisory_stances:
-  "Nifty 50 (Large Cap)": "Overweight"
-  "Nifty Midcap 150": "Overweight"
-  "Nifty Smallcap 250": "Overweight"
-  "Nifty 500 (Flexi/Multi)": "Overweight"
-  "Nifty Pharma": "Overweight"
-  "Nifty Infrastructure": "Overweight"
-  "Nifty Bank": "Underweight"
-  "Nifty IT": "Neutral"
-  "Nifty Auto": "Neutral"
-  "Nifty FMCG": "Neutral"
-  "Nifty Metal": "Neutral"
-  "Nifty Energy": "Neutral"
-
-# Benchmark Universe (Yahoo Finance Tickers)
 benchmarks:
   indian_equity:
     "Nifty 50 (Large Cap)": "^NSEI"
+    "BSE SENSEX": "^BSESN"
     "Nifty Next 50": "^NSMIDCP"
-    "Nifty Midcap 150": "MID150BEES.NS"
+    "Nifty Midcap 150": "^NSEMDCP150"
     "Nifty Smallcap 250": "HDFCSML250.NS"
     "Nifty 500 (Flexi/Multi)": "^CRSLDX"
+
+  volatility_indices:
     "India VIX": "^INDIAVIX"
+    "US CBOE VIX": "^VIX"
 
   indian_sectors:
     "Nifty Pharma": "^CNXPHARMA"
@@ -36,29 +24,32 @@ benchmarks:
     "Nifty Realty": "^CNXREALTY"
 
   global_indices:
-    "S&P 500 (US Broad)": "^GSPC"
-    "Nasdaq 100 (US Tech)": "^NDX"
-    "Hang Seng (China/HK)": "^HSI"
-    "Nikkei 225 (Japan)": "^N225"
+    "S&P 500 (New York)": "^GSPC"
+    "Dow Jones (New York)": "^DJI"
+    "Nasdaq 100 (New York)": "^NDX"
+    "FTSE 100 (London)": "^FTSE"
+    "CAC 40 (Paris)": "^FCHI"
+    "Nikkei 225 (Tokyo)": "^N225"
+    "DAX (Frankfurt)": "^GDAXI"
+    "Hang Seng (Hong Kong)": "^HSI"
     "MSCI Emerging Markets": "EEM"
-    "DAX (Europe)": "^GDAXI"
 
   macro_commodities_fx:
     "Gold (USD/oz)": "GC=F"
-    "Gold Bees (India ETF)": "GOLDBEES.NS"
     "Silver (USD/oz)": "SI=F"
     "Brent Crude": "BZ=F"
     "USD / INR": "INR=X"
+    "EUR / INR": "EURINR=X"
+    "GBP / INR": "GBPINR=X"
+    "JPY / INR": "JPYINR=X"
     "US Dollar Index (DXY)": "DX-Y.NYB"
     "US 10Y Treasury Yield": "^TNX"
 
-# Manual Macro Rates (Update when RBI changes Repo Rate)
 macro_manual:
   rbi_repo_rate: 6.50
   india_10y_gsec_approx: 6.85
   risk_free_rate_india: 0.068
 
-# Strict Tier-1 Whitelisted RSS Feeds (Zero Fake News Policy)
 rss_feeds:
   india:
     - name: "LiveMint Markets"
