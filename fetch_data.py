@@ -139,78 +139,78 @@ def fetch_pe_ratio(ticker):
 
 def compute_vol_stance(price, dist_200dma, r_1d, r_1w):
     if r_1d is not None and r_1d >= 15:
-        return "Fear Spike", "1D Surge"
+        return "Fear Spike | 1D volatility surge"
     if dist_200dma is not None and dist_200dma > 30:
-        return "Elevated Stress", "> 200-DMA"
+        return "Elevated Stress | Well above 200-DMA"
     if price < 14 and (r_1w is None or r_1w <= 2):
-        return "Low-Vol Calm", "Sub-14 VIX"
-    return "Normal Regime", "Balanced Vol"
+        return "Low-Vol Calm | Sub-14 volatility"
+    return "Normal Regime | Balanced volatility"
 
 
 def compute_bi_stance(pe, dist_200dma, from_52w_high, rsi_14, r_1m, r_3m, r_1y, sharpe, vol_1y, is_equity=True):
     score = 0.0
-    drivers = []
+    reasons = []
 
     if is_equity and pe is not None:
         if pe < 18:
             score += 1.5
-            drivers.append("Cheap P/E")
+            reasons.append(f"P/E {pe:.1f}x cheap")
         elif pe <= 24:
             score += 0.75
-            drivers.append("Fair P/E")
+            reasons.append(f"P/E {pe:.1f}x fair")
         elif pe <= 30:
             score -= 0.5
-            drivers.append("Rich P/E")
+            reasons.append(f"P/E {pe:.1f}x rich")
         else:
             score -= 1.5
-            drivers.append("High P/E")
+            reasons.append(f"P/E {pe:.1f}x high")
 
     if dist_200dma is not None:
         if -12 <= dist_200dma < 0 and r_1m is not None and r_1m > 0:
             score += 1.5
-            drivers.append("200-DMA Reversal")
+            reasons.append("1M bounce near 200-DMA")
         elif 0 <= dist_200dma <= 12:
             score += 1.0
-            drivers.append("> 200-DMA")
+            reasons.append("Above 200-DMA")
         elif dist_200dma > 18:
             score -= 1.25
-            drivers.append("Extended")
+            reasons.append("Extended above 200-DMA")
         elif dist_200dma < -15:
             score -= 1.0
-            drivers.append("< 200-DMA")
+            reasons.append("Below 200-DMA")
 
     if rsi_14 is not None:
         if rsi_14 > 75:
             score -= 0.5
-            drivers.append("Overbought RSI")
+            reasons.append(f"RSI {rsi_14:.0f} overbought")
         elif rsi_14 < 30:
             score += 0.5
-            drivers.append("Oversold RSI")
+            reasons.append(f"RSI {rsi_14:.0f} oversold")
 
     if from_52w_high is not None and from_52w_high < -20 and (r_1m is None or r_1m <= 0):
         score -= 0.75
-        drivers.append("Off 52W High")
+        reasons.append(f"{from_52w_high:.0f}% off 52W high")
 
     pos_horizons = sum(1 for x in [r_1m, r_3m, r_1y] if x is not None and x > 0)
     neg_horizons = sum(1 for x in [r_1m, r_3m, r_1y] if x is not None and x < 0)
     if pos_horizons == 3:
         score += 1.0
-        drivers.append("Uptrend")
+        reasons.append("1M/3M/1Y positive")
     elif neg_horizons == 3:
         score -= 1.0
-        drivers.append("Downtrend")
+        reasons.append("1M/3M/1Y negative")
 
     if sharpe is not None:
         if sharpe >= 1.0:
             score += 0.75
-            drivers.append("High Sharpe")
+            reasons.append(f"Sharpe {sharpe:.2f}")
         elif sharpe < -0.25:
             score -= 0.75
-            drivers.append("Low Sharpe")
+            reasons.append(f"Weak Sharpe {sharpe:.2f}")
 
     if vol_1y is not None and vol_1y > 28 and is_equity:
         score -= 0.5
-        drivers.append("High Vol")
+        reasons.append(f"High vol {vol_1y:.0f}%")
 
     if score >= 2.5:
         label = "Strong Buy"
@@ -223,8 +223,8 @@ def compute_bi_stance(pe, dist_200dma, from_52w_high, rsi_14, r_1m, r_3m, r_1y, 
     else:
         label = "Avoid"
 
-    driver_text = drivers[0] if drivers else "Balanced"
-    return label, driver_text
+    reasoning = ", ".join(reasons[:2]) if reasons else "Balanced signals"
+    return f"{label} | {reasoning}"
 
 
 def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mode="equity", include_yoy=False):
@@ -255,9 +255,9 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mod
     rsi_14 = None if mode == "vol" else calc_rsi_14(close)
 
     if mode == "vol":
-        stance_label, stance_driver = compute_vol_stance(current_price, dist_200dma, r_1d, r_1w)
+        bi_stance = compute_vol_stance(current_price, dist_200dma, r_1d, r_1w)
     else:
-        stance_label, stance_driver = compute_bi_stance(
+        bi_stance = compute_bi_stance(
             pe, dist_200dma, from_52w_high, rsi_14, r_1m, r_3m, r_1y, sharpe, ann_vol, is_equity=(mode == "equity")
         )
 
@@ -279,8 +279,7 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mod
         "from_52w_high": from_52w_high,
         "dist_200dma": dist_200dma,
         "pe": pe if mode == "equity" else None,
-        "bi_stance": stance_label,
-        "bi_driver": stance_driver,
+        "bi_stance": bi_stance,
     }
     if include_yoy:
         out["yoy_returns"] = calc_yoy_history(close, start_year=1995)
