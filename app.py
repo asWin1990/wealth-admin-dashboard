@@ -395,6 +395,13 @@ def rsi_badge_html(v):
     return f"<span style='display:inline-block;padding:1px 5px;border-radius:4px;background:rgba(148,163,184,0.12);color:#E2E8F0;font-size:11.5px;'>{v:.1f}</span>"
 
 
+def quartile_badge_html(q_text):
+    q = q_text or "—"
+    if "Q1" in q:
+        return f"<span style='display:inline-block;padding:2px 7px;border-radius:4px;background:rgba(16,185,129,0.18);color:#34D399;font-weight:700;font-size:11px;'>{q}</span>"
+    return f"<span style='display:inline-block;padding:2px 7px;border-radius:4px;background:rgba(245,158,11,0.18);color:#FBBF24;font-weight:700;font-size:11px;'>{q}</span>"
+
+
 # --- HEADER + LAST FETCHED & FRESHNESS SIGNAL ---
 regime = ai.get("market_regime", "Awaiting AI Sync")
 st.markdown(
@@ -424,7 +431,7 @@ elif fresh_css == "status-aging":
         "Click **🔄 Refresh Live Data & AI Now** if you need an immediate sync."
     )
 
-# --- TOP KPI PULSE STRIP (INCL. FPI & DII FLOWS) ---
+# --- TOP KPI PULSE STRIP ---
 def find_item(cat, keyword):
     for x in markets.get(cat, []):
         if keyword.lower() in x["name"].lower():
@@ -585,7 +592,54 @@ def render_heatmap(items, show_valuation=True, show_risk_metrics=True, show_yiel
     st.markdown(table_html, unsafe_allow_html=True)
 
 
-# --- MAIN TABS (6 TABS COVERING ALL MODULES) ---
+def render_fund_alpha_heatmap(items):
+    if not items:
+        return
+
+    def plain_num(v, fmt):
+        if v is None or pd.isna(v):
+            return "<span style='color:#64748B;'>—</span>"
+        return fmt.format(v)
+
+    headers = [
+        "Fund / ETF Proxy", "Category", "Fund 1Y", "Bench 1Y",
+        "Alpha vs Bench", "vs Cat Median", "3Y CAGR", "Std Dev",
+        "Sharpe", "Down Cap", "Max DD", "Quartile",
+    ]
+    th_html = "".join(
+        f"<th style='text-align:left;padding:7px 7px;color:#94A3B8;font-size:10px;text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid rgba(255,255,255,0.12);white-space:nowrap;'>{h}</th>"
+        for h in headers
+    )
+
+    body_rows = []
+    for r in items:
+        tds = [
+            f"<td style='font-weight:600;color:#F8FAFC;white-space:nowrap;padding:6px 8px;'>{r.get('fund', '—')}</td>",
+            f"<td style='color:#CBD5E1;white-space:nowrap;padding:6px 8px;'>{r.get('category', '—')}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 6px;'>{pct_badge_html(r.get('fund_1y'))}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 6px;'>{pct_badge_html(r.get('bench_1y'))}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 6px;'>{pct_badge_html(r.get('alpha_vs_bench'))}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 6px;'>{pct_badge_html(r.get('vs_cat_median'))}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 6px;'>{pct_badge_html(r.get('fund_3y_cagr'))}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 6px;'>{plain_num(r.get('std_dev'), '{:.1f}%')}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 6px;'>{plain_num(r.get('sharpe'), '{:.2f}')}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 6px;'>{plain_num(r.get('downside_capture'), '{:.0f}%')}</td>",
+            f"<td style='font-family:\"JetBrains Mono\",monospace;white-space:nowrap;padding:6px 6px;'>{pct_badge_html(r.get('max_dd'))}</td>",
+            f"<td style='white-space:nowrap;padding:6px 8px;'>{quartile_badge_html(r.get('quartile'))}</td>",
+        ]
+        body_rows.append("<tr style='border-bottom:1px solid rgba(255,255,255,0.05);'>" + "".join(tds) + "</tr>")
+
+    table_html = (
+        "<div style='overflow-x:auto;border:1px solid rgba(255,255,255,0.08);border-radius:10px;background:rgba(15,23,42,0.72);margin-bottom:8px;'>"
+        "<table style='width:100%;border-collapse:collapse;font-size:12px;'>"
+        f"<thead><tr>{th_html}</tr></thead>"
+        f"<tbody>{''.join(body_rows)}</tbody>"
+        "</table></div>"
+    )
+    st.markdown(table_html, unsafe_allow_html=True)
+
+
+# --- MAIN TABS ---
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📊 Pulse, Valuation & Equity",
     "🧭 Sectors & YoY Charts",
@@ -596,7 +650,6 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 ])
 
 with tab1:
-    # 1. Market Pulse: FPI & DII Flows + 2. Nifty 10Y Valuation vs Lumpsum/STP
     col_flow, col_val = st.columns([1, 1.35])
     with col_flow:
         render_section_heading("Institutional Flows (FPI vs. DII Cash)", as_of_stamp)
@@ -648,36 +701,7 @@ with tab1:
 
     if view_slice in ["All", "Fund Alpha & Risk"]:
         render_section_heading("Equity Fund vs. Benchmark & Category Median Alpha", as_of_stamp)
-        if fund_alpha:
-            adf = pd.DataFrame(fund_alpha).rename(columns={
-                "fund": "Fund / ETF Proxy",
-                "category": "Category",
-                "fund_1y": "Fund 1Y",
-                "bench_1y": "Bench 1Y",
-                "alpha_vs_bench": "Alpha vs Bench",
-                "vs_cat_median": "vs Cat Median",
-                "fund_3y_cagr": "3Y CAGR",
-                "std_dev": "Std Dev",
-                "sharpe": "Sharpe",
-                "downside_capture": "Down Cap",
-                "max_dd": "Max DD",
-                "quartile": "Quartile",
-            })
-            st.dataframe(
-                adf.style.format({
-                    "Fund 1Y": "{:+.2f}%",
-                    "Bench 1Y": "{:+.2f}%",
-                    "Alpha vs Bench": "{:+.2f}%",
-                    "vs Cat Median": "{:+.2f}%",
-                    "3Y CAGR": "{:+.2f}%",
-                    "Std Dev": "{:.1f}%",
-                    "Sharpe": "{:.2f}",
-                    "Down Cap": "{:.0f}%",
-                    "Max DD": "{:.2f}%",
-                }, na_rep="—"),
-                use_container_width=True,
-                hide_index=True,
-            )
+        render_fund_alpha_heatmap(fund_alpha)
 
     if view_slice in ["All", "Volatility"]:
         render_section_heading("Volatility & Fear Indices", as_of_stamp)
@@ -735,7 +759,6 @@ with tab2:
 
             mdf = pd.DataFrame(matrix_rows).sort_values("_sort_3m", ascending=False)
 
-            # Top & Bottom Sectors Client Talking Points Strip
             top2 = mdf.head(2)
             bot2 = mdf.tail(2)
             c_top, c_bot = st.columns(2)
@@ -880,7 +903,6 @@ with tab2:
                 st.plotly_chart(hm_fig, use_container_width=True)
 
 with tab3:
-    # 8. What's Interesting Today Layer
     render_section_heading("What's Interesting Today — Rules-Based Market Signals", as_of_stamp)
     if whats_interesting:
         a_cols = st.columns(2)
@@ -899,7 +921,6 @@ with tab3:
                     unsafe_allow_html=True,
                 )
 
-    # 7. Industry & Regulatory Feed (AMFI Monthly + NFO Calendar)
     render_section_heading(f"AMFI Industry Flows & Retail Pulse ({amfi_monthly.get('report_month', 'Monthly')})", as_of_stamp)
     if amfi_monthly:
         i1, i2, i3, i4, i5 = st.columns(5)
@@ -1048,7 +1069,6 @@ with tab6:
             "Sovereign yield benchmarks, CPI/WPI inflation metrics, and category duration profiles above remain active."
         )
 
-# --- 9. APPENDIX: DATA SOURCES ---
 with st.expander("📎 Appendix — Data Sources, Proxies & Refresh Cadence"):
     sources_df = pd.DataFrame([
         {"Module": "Indian Equity, SENSEX & Sectors", "Primary Source": "Yahoo Finance (NSE/BSE Index & ETF Proxies)", "Cadence": "Automated 8:30 AM & 4:30 PM IST + Auto-Fetch"},
