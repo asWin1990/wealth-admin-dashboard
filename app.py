@@ -14,11 +14,16 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- SLEEK INSTITUTIONAL TERMINAL CSS ---
 st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+    @keyframes pulseGold {
+        0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.25); }
+        70% { box-shadow: 0 0 0 8px rgba(212, 175, 55, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+    }
 
     .stApp {
         background: radial-gradient(circle at 15% 0%, #111C33 0%, #070B14 55%, #05080F 100%);
@@ -34,7 +39,7 @@ st.markdown(
         background: #090E1A !important;
         border-right: 1px solid rgba(255, 255, 255, 0.06);
     }
-    .block-container { padding-top: 2.2rem; max-width: 1450px; }
+    .block-container { padding-top: 2.2rem; max-width: 1480px; }
 
     .brand-title {
         font-size: 28px; font-weight: 700; letter-spacing: 1.2px;
@@ -47,6 +52,7 @@ st.markdown(
         display: inline-block; padding: 3px 10px; border-radius: 999px;
         background: rgba(212, 175, 55, 0.14); border: 1px solid rgba(212, 175, 55, 0.4);
         color: #F3D58D; font-size: 11px; font-weight: 600; margin-left: 8px;
+        animation: pulseGold 2.8s infinite;
     }
 
     .kpi-card {
@@ -54,17 +60,18 @@ st.markdown(
         backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-top: 2px solid rgba(212, 175, 55, 0.7);
-        border-radius: 10px; padding: 15px 16px;
-        transition: transform 0.15s ease, border-color 0.15s ease;
+        border-radius: 10px; padding: 14px 15px;
+        transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
     }
     .kpi-card:hover {
-        transform: translateY(-2px);
-        border-color: rgba(212, 175, 55, 0.55);
+        transform: translateY(-3px);
+        border-color: rgba(212, 175, 55, 0.6);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     }
-    .kpi-label { font-size: 10.5px; color: #94A3B8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-    .kpi-val { font-size: 21px; font-weight: 700; color: #F8FAFC; font-family: 'JetBrains Mono', monospace; margin-top: 6px; }
-    .kpi-pos { font-size: 12px; color: #34D399; font-weight: 600; margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
-    .kpi-neg { font-size: 12px; color: #F87171; font-weight: 600; margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+    .kpi-label { font-size: 10px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.9px; font-weight: 600; }
+    .kpi-val { font-size: 19px; font-weight: 700; color: #F8FAFC; font-family: 'JetBrains Mono', monospace; margin-top: 6px; }
+    .kpi-pos { font-size: 12px; color: #34D399; font-weight: 700; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+    .kpi-neg { font-size: 12px; color: #F87171; font-weight: 700; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
 
     .ai-box {
         background: rgba(17, 25, 40, 0.75);
@@ -81,7 +88,7 @@ st.markdown(
     .badge {
         display: inline-block; padding: 2px 8px; border-radius: 4px;
         font-size: 10.5px; font-weight: 700; background: rgba(212, 175, 55, 0.14);
-        color: #E2C06D; margin-right: 6px; letter-spacing: 0.4px;
+        color: #E2C06D; margin-right: 6px;
     }
     h3, h4 { color: #E2C06D !important; font-weight: 600 !important; letter-spacing: 0.3px; }
     button[data-baseweb="tab"] {
@@ -95,21 +102,19 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- LOAD SNAPSHOT ---
 SNAPSHOT_PATH = "data/market_snapshot.json"
 snapshot = None
 if os.path.exists(SNAPSHOT_PATH):
     with open(SNAPSHOT_PATH, "r", encoding="utf-8") as f:
         snapshot = json.load(f)
 
-# --- SIDEBAR CONTROLS ---
 with st.sidebar:
     st.markdown("### ⚡ AURA BI AGENT")
     st.caption("Autonomous Market & Valuation Intelligence")
     st.divider()
 
     if st.button("🔄 Refresh Live Data & AI", use_container_width=True, type="primary"):
-        with st.spinner("Pulling live prices, P/E multiples, Gold INR & Gemini AI brief..."):
+        with st.spinner("Pulling live prices, SENSEX, FX, Volatility & AI brief..."):
             run_fetch()
             if os.environ.get("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY", None):
                 if "GEMINI_API_KEY" not in os.environ and "GEMINI_API_KEY" in st.secrets:
@@ -127,7 +132,7 @@ with st.sidebar:
             mime="text/html",
             use_container_width=True,
         )
-        st.caption("Open downloaded file in browser & press Ctrl+P for a crisp white-paper PDF.")
+        st.caption("Open downloaded file in browser & press Ctrl+P for a crisp PDF.")
 
     st.divider()
     st.caption("Auto-Schedule: 8:30 AM & 4:30 PM IST (Mon–Fri)")
@@ -153,31 +158,30 @@ def format_price(item):
     return f"{val:,.2f}"
 
 
+def fmt_arrow_pct(val):
+    if val is None or pd.isna(val):
+        return "—"
+    arrow = "▲" if val >= 0 else "▼"
+    sign = "+" if val > 0 else ""
+    return f"{arrow} {sign}{val:.2f}%"
+
+
 # --- HEADER ---
-col_h1, col_h2 = st.columns([4, 1])
-with col_h1:
-    regime = ai.get("market_regime", "Awaiting AI Sync")
-    st.markdown(
-        f"""
-        <div class="brand-title">AURA BI AGENT</div>
-        <div class="brand-sub">
-            Updated: <strong>{snapshot.get('updated_at_ist', 'N/A')}</strong>
-            <span class="regime-pill">REGIME: {regime.upper()}</span>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with col_h2:
-    with st.popover("ℹ️ BI Methodology"):
-        st.markdown("""
-        * **BI Stance:** Algorithmic score combining **P/E multiples** (via ETF proxies), **200-DMA trend**, **1M/3M momentum**, and **1Y Sharpe**.
-        * **RSI (14):** `< 35` = Oversold / Entry zone; `> 70` = Overbought / Caution.
-        * **vs 52W High:** `%` pullback from 52-week peak.
-        """)
+regime = ai.get("market_regime", "Awaiting AI Sync")
+st.markdown(
+    f"""
+    <div class="brand-title">AURA BI AGENT</div>
+    <div class="brand-sub">
+        Updated: <strong>{snapshot.get('updated_at_ist', 'N/A')}</strong>
+        <span class="regime-pill">REGIME: {regime.upper()}</span>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- TOP KPI PULSE STRIP ---
+# --- TOP KPI PULSE STRIP (7 CARDS) ---
 def find_item(cat, keyword):
     for x in markets.get(cat, []):
         if keyword.lower() in x["name"].lower():
@@ -186,46 +190,66 @@ def find_item(cat, keyword):
 
 kpis = [
     ("Nifty 50", find_item("indian_equity", "Nifty 50")),
-    ("India VIX", find_item("indian_equity", "VIX")),
-    ("S&P 500", find_item("global_indices", "S&P 500")),
-    ("Gold (INR / 10g)", find_item("macro_commodities_fx", "Gold (INR")),
+    ("BSE SENSEX", find_item("indian_equity", "SENSEX")),
+    ("S&P 500 (NY)", find_item("global_indices", "S&P 500")),
+    ("Gold (INR/10g)", find_item("macro_commodities_fx", "Gold (INR")),
     ("USD / INR", find_item("macro_commodities_fx", "USD / INR")),
+    ("India VIX", find_item("volatility_indices", "India VIX")),
 ]
 
-kpi_cols = st.columns(6)
+kpi_cols = st.columns(7)
 for idx, (label, item) in enumerate(kpis):
     with kpi_cols[idx]:
         if item:
             d1 = item.get("1D") or 0
             cls = "kpi-pos" if d1 >= 0 else "kpi-neg"
+            arrow = "▲" if d1 >= 0 else "▼"
             sign = "+" if d1 > 0 else ""
             st.markdown(
                 f"""
                 <div class="kpi-card">
                   <div class="kpi-label">{label}</div>
                   <div class="kpi-val">{format_price(item)}</div>
-                  <div class="{cls}">{sign}{d1:.2f}% (1D)</div>
+                  <div class="{cls}">{arrow} {sign}{d1:.2f}%</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-with kpi_cols[5]:
+with kpi_cols[6]:
     repo = macro.get("rbi_repo_rate", 6.50)
     gsec = macro.get("india_10y_gsec_approx", 6.85)
     spread = round(gsec - repo, 2)
     st.markdown(
         f"""
         <div class="kpi-card">
-          <div class="kpi-label">RBI Repo / 10Y G-Sec</div>
-          <div class="kpi-val">{repo:.2f}% / {gsec:.2f}%</div>
-          <div class="kpi-pos">Spread: +{spread:.2f}%</div>
+          <div class="kpi-label">RBI Repo / 10Y</div>
+          <div class="kpi-val">{repo:.2f}%/{gsec:.2f}%</div>
+          <div class="kpi-pos">▲ +{spread:.2f}% Sprd</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 st.markdown("<br>", unsafe_allow_html=True)
+
+# --- COLLAPSIBLE JARGON & CAGR METHODOLOGY DRAWER ---
+with st.expander("📘 Jargon Glossary & CAGR Methodology (Click to Expand / Collapse)"):
+    g1, g2 = st.columns(2)
+    with g1:
+        st.markdown("""
+        * **CAGR (3Y & 5Y):** Compound Annual Growth Rate — `((Ending Price / Beginning Price) ^ (1 / Years)) - 1`. Smooths multi-year returns into a steady annual equivalent.
+        * **1D / 1W / 1M / 3M / 1Y:** Point-to-point percentage return over 1, 5, 21, 63, and 252 trading sessions.
+        * **Vol % (1Y Volatility):** Annualized standard deviation of daily returns (`daily_std * √252`). Measures price swings / turbulence.
+        * **Sharpe (1Y):** `(1Y Return - 6.8% Risk-Free Rate) / 1Y Volatility`. Measures return earned per unit of risk (`> 1.0` = strong risk-adjusted return).
+        """)
+    with g2:
+        st.markdown("""
+        * **RSI (14):** 14-day Relative Strength Index (`0–100`). `< 35` flags oversold / potential bounce zone; `> 70` flags overbought / extended momentum.
+        * **vs 52W High:** Percentage distance below the 52-week peak (`-15%` means 15% off the highs).
+        * **vs 200-DMA:** Percentage above or below the 200-day moving average. Long-term trend line (`< 0%` with rising `1M` can signal early mean-reversion).
+        * **P/E & BI Stance:** Trailing Price-to-Earnings (via liquid ETF proxies for equity indices) combined with trend, momentum, and Sharpe to classify `Strong Buy`, `Accumulate`, `Hold / Neutral`, `Cautious / Trim`, or `Avoid / Weak`.
+        """)
 
 # --- AI AGENT BRIEF ---
 if ai:
@@ -298,22 +322,24 @@ def render_heatmap(items, show_valuation=True):
 
 # --- MAIN TABS ---
 tab1, tab2, tab3, tab4 = st.tabs([
-    "📊 Equity & Valuation Heatmaps",
-    "🧭 Sector Rotation Radar",
+    "📊 Equity, MF & Volatility",
+    "🧭 Sector & Return Charts",
     "📰 Top 10 Verified News",
-    "🌍 Macro, FX & Commodities",
+    "🌍 Global, FX & Commodities",
 ])
 
 with tab1:
-    st.markdown("#### Indian Broad Equity & MF Category Benchmarks")
+    st.markdown("#### Indian Broad Equity, BSE SENSEX & MF Category Benchmarks")
     render_heatmap(markets.get("indian_equity", []), show_valuation=True)
+
+    st.markdown("#### Volatility & Fear Indices (Dedicated Group)")
+    render_heatmap(markets.get("volatility_indices", []), show_valuation=False)
+
     st.markdown("#### Indian Sectoral Benchmarks")
     render_heatmap(markets.get("indian_sectors", []), show_valuation=True)
-    st.markdown("#### Global Markets (Indian International FoF Exposure)")
-    render_heatmap(markets.get("global_indices", []), show_valuation=True)
 
 with tab2:
-    st.markdown("#### Sector Trend vs. Momentum Quadrant")
+    st.markdown("#### Sector Trend vs. 3M Momentum Quadrant")
     sectors = markets.get("indian_sectors", [])
     if sectors:
         sdf = pd.DataFrame(sectors).dropna(subset=["dist_200dma", "3M"])
@@ -327,13 +353,32 @@ with tab2:
                 size=sdf["volatility_1y"].fillna(15),
                 labels={"dist_200dma": "Distance from 200-DMA (%)", "3M": "3-Month Return (%)"},
                 template="plotly_dark",
-                height=500,
+                height=440,
             )
             fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
             fig.add_vline(x=0, line_dash="dash", line_color="#64748B")
             fig.add_hline(y=0, line_dash="dash", line_color="#64748B")
             fig.update_traces(textposition="top center")
             st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("#### 1Y Return vs. 1Y Volatility Comparison (Indian Equity & Sectors)")
+    combined_eq = markets.get("indian_equity", []) + markets.get("indian_sectors", [])
+    if combined_eq:
+        cdf = pd.DataFrame(combined_eq).dropna(subset=["1Y", "volatility_1y"])
+        if not cdf.empty:
+            bar_fig = px.bar(
+                cdf.sort_values("1Y", ascending=True),
+                x="1Y",
+                y="name",
+                orientation="h",
+                color="1Y",
+                color_continuous_scale=["#EF4444", "#475569", "#10B981"],
+                labels={"1Y": "1-Year Return (%)", "name": "Benchmark"},
+                template="plotly_dark",
+                height=460,
+            )
+            bar_fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
+            st.plotly_chart(bar_fig, use_container_width=True)
 
 with tab3:
     st.markdown("#### Top 10 Verified Financial News")
@@ -361,5 +406,8 @@ with tab3:
         )
 
 with tab4:
-    st.markdown("#### Gold (INR & USD), Commodities, FX & Global Yields")
+    st.markdown("#### Global Markets (New York, London, Paris, Tokyo & More)")
+    render_heatmap(markets.get("global_indices", []), show_valuation=True)
+
+    st.markdown("#### Gold (INR & USD), Currencies (USD, EUR, GBP, JPY), Commodities & Yields")
     render_heatmap(markets.get("macro_commodities_fx", []), show_valuation=False)
