@@ -39,7 +39,16 @@ st.markdown(
         background: #090E1A !important;
         border-right: 1px solid rgba(255, 255, 255, 0.06);
     }
-    .block-container { padding-top: 2.2rem; max-width: 1480px; }
+    .block-container { padding-top: 2.2rem; max-width: 1520px; }
+
+    /* Ensure expander text wraps cleanly without horizontal clipping */
+    div[data-testid="stExpander"] p,
+    div[data-testid="stExpander"] li,
+    div[data-testid="stExpander"] code {
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow-wrap: anywhere !important;
+    }
 
     .brand-title {
         font-size: 28px; font-weight: 700; letter-spacing: 1.2px;
@@ -92,7 +101,7 @@ st.markdown(
     }
     h3, h4 { color: #E2C06D !important; font-weight: 600 !important; letter-spacing: 0.3px; }
     button[data-baseweb="tab"] {
-        color: #94A3B8 !important; font-weight: 600 !important; font-size: 14px !important; padding: 10px 16px !important;
+        color: #94A3B8 !important; font-weight: 600 !important; font-size: 14px !important; padding: 10px 14px !important;
     }
     button[data-baseweb="tab"][aria-selected="true"] {
         color: #F3D58D !important; border-bottom-color: #D4AF37 !important;
@@ -114,12 +123,12 @@ with st.sidebar:
     st.divider()
 
     if st.button("🔄 Refresh Live Data & AI", use_container_width=True, type="primary"):
-        with st.spinner("Pulling live prices, SENSEX, FX, Volatility & AI brief..."):
+        with st.spinner("Pulling live prices, YoY history, Debt proxies & News Headlines..."):
             run_fetch()
             if os.environ.get("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY", None):
                 if "GEMINI_API_KEY" not in os.environ and "GEMINI_API_KEY" in st.secrets:
                     os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
-                run_ai_analysis()
+            run_ai_analysis()
         st.success("Terminal updated!")
         st.rerun()
 
@@ -144,6 +153,7 @@ if not snapshot:
 ai = snapshot.get("ai_strategist", {})
 macro = snapshot.get("macro_manual", {})
 markets = snapshot.get("markets", {})
+debt_liquid = snapshot.get("debt_liquid", [])
 
 
 def format_price(item):
@@ -225,23 +235,27 @@ with kpi_cols[6]:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- COLLAPSIBLE JARGON & CAGR METHODOLOGY ---
-with st.expander("📘 Jargon Glossary, CAGR Methodology and BI Stance Guide"):
+# --- AURA AI GUIDE ---
+with st.expander("📘 AURA AI guide — Jargon Glossary, CAGR Methodology and BI Stance"):
     g1, g2 = st.columns(2)
     with g1:
-        st.markdown("""
-        * **CAGR (3Y and 5Y):** Compound Annual Growth Rate — `((Ending Price / Beginning Price) ^ (1 / Years)) - 1`. Converts multi-year cumulative change into an annualized return rate.
-        * **1D, 1W, 1M, 3M and 1Y:** Point-to-point percentage price change over 1, 5, 21, 63, and 252 trading sessions.
-        * **Vol %:** Annualized standard deviation of daily returns (`daily_std * √252`). Tracks return dispersion and price swings.
-        * **Sharpe:** `(1Y Return - 6.8% Risk-Free Rate) / 1Y Volatility`. Gauges return generated per unit of risk on return assets (omitted on VIX indices).
-        """)
+        st.markdown(
+            """
+            * **CAGR (3Y and 5Y):** Compound Annual Growth Rate = `((Ending Price / Beginning Price) ^ (1 / Years)) - 1`. Converts multi-year cumulative price change into an annualized return rate.
+            * **1D, 1W, 1M, 3M and 1Y:** Point-to-point percentage return across 1, 5, 21, 63, and 252 trading sessions.
+            * **Vol %:** Annualized return volatility = `daily_std * √252`. Measures price fluctuation intensity.
+            * **Sharpe:** `(1Y Return - 6.8% Risk-Free Rate) / 1Y Volatility`. Gauges return per unit of volatility on return assets (omitted on VIX indices).
+            """
+        )
     with g2:
-        st.markdown("""
-        * **vs 52W High:** Percentage gap below the 52-week peak (`-15%` means 15% below the 1-year high).
-        * **vs 200-DMA:** Percentage distance above or below the 200-day moving average long-term trend line.
-        * **P/E:** Trailing Price-to-Earnings multiple (sourced directly or via liquid ETF proxies for equity indices).
-        * **BI Stance:** Multi-factor score combining valuation multiples, 200-DMA and 52W High positioning, 1M/3M/1Y momentum alignment, and Sharpe/volatility; volatility indices use regime and spike logic instead.
-        """)
+        st.markdown(
+            """
+            * **vs 52W High:** Percentage gap below the 52-week peak (`-15%` means 15% below the 1-year high).
+            * **vs 200-DMA:** Percentage distance above or below the 200-day moving average trend line.
+            * **P/E:** Trailing Price-to-Earnings multiple (sourced directly or via liquid ETF proxies for equity benchmarks).
+            * **BI Stance:** Multi-factor judgement combining valuation multiples, 200-DMA and 52W High positioning, 1M/3M/1Y momentum alignment, and Sharpe/volatility; volatility indices use regime and spike logic instead.
+            """
+        )
 
 # --- AI AGENT BRIEF ---
 if ai:
@@ -307,15 +321,23 @@ def render_heatmap(items, show_valuation=True, show_risk_metrics=True):
         fmt_map["P/E"] = "{:.1f}"
 
     styled = df.style.map(color_cells, subset=ret_cols).format(fmt_map, na_rep="—")
-    st.dataframe(styled, use_container_width=True, hide_index=True)
+    st.dataframe(
+        styled,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "BI Stance": st.column_config.TextColumn("BI Stance", width="large"),
+        },
+    )
 
 
 # --- MAIN TABS ---
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📊 Equity, MF and Volatility",
     "🧭 Sector and Return Charts",
-    "📰 Top 10 Verified News",
+    "📰 News Headlines",
     "🌍 Global, FX and Commodities",
+    "🏦 Debt & Liquid MF",
 ])
 
 with tab1:
@@ -329,21 +351,103 @@ with tab1:
     render_heatmap(markets.get("indian_sectors", []), show_valuation=True, show_risk_metrics=True)
 
 with tab2:
-    st.markdown("#### Sector Trend vs. 3M Momentum Quadrant")
+    # 1. Year-on-Year Returns since 1995
+    st.markdown("#### Year-on-Year Calendar Returns Since 1995")
+    yoy_candidates = [x for x in (markets.get("indian_equity", []) + markets.get("global_indices", [])) if x.get("yoy_returns")]
+    if yoy_candidates:
+        selected_yoy_name = st.selectbox(
+            "Select Broad Market Index for YoY Return History",
+            options=[x["name"] for x in yoy_candidates],
+            index=0,
+        )
+        chosen = next(x for x in yoy_candidates if x["name"] == selected_yoy_name)
+        yoy_dict = chosen.get("yoy_returns", {})
+        if yoy_dict:
+            yoy_df = pd.DataFrame([{"Year": k, "YoY Return %": v} for k, v in yoy_dict.items()])
+            yoy_fig = px.bar(
+                yoy_df,
+                x="Year",
+                y="YoY Return %",
+                color="YoY Return %",
+                color_continuous_scale=["#EF4444", "#475569", "#10B981"],
+                labels={"YoY Return %": f"{selected_yoy_name} YoY Return (%)"},
+                template="plotly_dark",
+                height=380,
+            )
+            yoy_fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
+            st.plotly_chart(yoy_fig, use_container_width=True)
+            st.dataframe(yoy_df.T, use_container_width=True)
+    else:
+        st.info("Click **🔄 Refresh Live Data & AI** once to pull historical YoY series since 1995.")
+
+    st.divider()
+
+    # 2. Sectoral Performance Breakup: Leader vs. Laggard Matrix
+    st.markdown("#### Sectoral Performance Breakup — Leader vs. Laggard Matrix")
     sectors = markets.get("indian_sectors", [])
     if sectors:
-        sdf = pd.DataFrame(sectors).dropna(subset=["dist_200dma", "3M"])
-        if not sdf.empty:
+        sdf = pd.DataFrame(sectors)
+        nifty_item = find_item("indian_equity", "Nifty 50")
+        nifty_1m = nifty_item.get("1M") if nifty_item and nifty_item.get("1M") is not None else 0.0
+        nifty_3m = nifty_item.get("3M") if nifty_item and nifty_item.get("3M") is not None else 0.0
+        nifty_1y = nifty_item.get("1Y") if nifty_item and nifty_item.get("1Y") is not None else 0.0
+
+        matrix_rows = []
+        for x in sectors:
+            r1m = x.get("1M")
+            r3m = x.get("3M")
+            r1y = x.get("1Y")
+            rel_3m = round(r3m - nifty_3m, 2) if r3m is not None else None
+            rel_1y = round(r1y - nifty_1y, 2) if r1y is not None else None
+
+            if rel_3m is not None and rel_3m >= 3.0 and (r1m is not None and r1m >= 0):
+                bucket = "Leader"
+            elif rel_3m is not None and rel_3m <= -3.0:
+                bucket = "Laggard"
+            else:
+                bucket = "In-Line / Transition"
+
+            matrix_rows.append({
+                "Sector": x["name"],
+                "1M": r1m,
+                "3M": r3m,
+                "1Y": r1y,
+                "vs Nifty 3M": rel_3m,
+                "vs Nifty 1Y": rel_1y,
+                "Vol %": x.get("volatility_1y"),
+                "P/E": x.get("pe"),
+                "Leader / Laggard": bucket,
+                "BI Stance": x.get("bi_stance", "Neutral"),
+            })
+
+        mdf = pd.DataFrame(matrix_rows).sort_values("vs Nifty 3M", ascending=False, na_position="last")
+        st.dataframe(
+            mdf.style.format({
+                "1M": "{:+.2f}%",
+                "3M": "{:+.2f}%",
+                "1Y": "{:+.2f}%",
+                "vs Nifty 3M": "{:+.2f}%",
+                "vs Nifty 1Y": "{:+.2f}%",
+                "Vol %": "{:.1f}%",
+                "P/E": "{:.1f}",
+            }, na_rep="—"),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+        # Sector Quadrant Chart
+        qdf = sdf.dropna(subset=["dist_200dma", "3M"])
+        if not qdf.empty:
             fig = px.scatter(
-                sdf,
+                qdf,
                 x="dist_200dma",
                 y="3M",
                 text="name",
                 color="bi_stance",
-                size=sdf["volatility_1y"].fillna(15),
+                size=qdf["volatility_1y"].fillna(15),
                 labels={"dist_200dma": "Distance from 200-DMA (%)", "3M": "3-Month Return (%)"},
                 template="plotly_dark",
-                height=440,
+                height=420,
             )
             fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
             fig.add_vline(x=0, line_dash="dash", line_color="#64748B")
@@ -351,31 +455,12 @@ with tab2:
             fig.update_traces(textposition="top center")
             st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("#### 1Y Return Comparison Across Indian Equity and Sectors")
-    combined_eq = markets.get("indian_equity", []) + markets.get("indian_sectors", [])
-    if combined_eq:
-        cdf = pd.DataFrame(combined_eq).dropna(subset=["1Y", "volatility_1y"])
-        if not cdf.empty:
-            bar_fig = px.bar(
-                cdf.sort_values("1Y", ascending=True),
-                x="1Y",
-                y="name",
-                orientation="h",
-                color="1Y",
-                color_continuous_scale=["#EF4444", "#475569", "#10B981"],
-                labels={"1Y": "1-Year Return (%)", "name": "Benchmark"},
-                template="plotly_dark",
-                height=460,
-            )
-            bar_fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(17,25,40,0.5)")
-            st.plotly_chart(bar_fig, use_container_width=True)
-
 with tab3:
-    st.markdown("#### Top 10 Verified Financial News")
+    st.markdown("#### News Headlines")
     filter_reg = st.radio("Filter Region", ["ALL", "INDIA", "GLOBAL"], horizontal=True)
     news_list = snapshot.get("verified_news", [])
     if not news_list:
-        st.info("Click **🔄 Refresh Live Data & AI** in the sidebar to populate today's AI-verified news wire.")
+        st.info("Click **🔄 Refresh Live Data & AI** in the sidebar to load today's News Headlines.")
     for n in news_list:
         if filter_reg != "ALL" and n.get("region", "").upper() != filter_reg:
             continue
@@ -401,3 +486,51 @@ with tab4:
 
     st.markdown("#### Gold, Currencies, Commodities and Yields")
     render_heatmap(markets.get("macro_commodities_fx", []), show_valuation=False, show_risk_metrics=True)
+
+with tab5:
+    st.markdown("#### Debt & Liquid Mutual Fund Comparison (Duration, Credit & Return Profile)")
+    repo = macro.get("rbi_repo_rate", 6.50)
+    gsec = macro.get("india_10y_gsec_approx", 6.85)
+    spread = round(gsec - repo, 2)
+
+    m1, m2, m3 = st.columns(3)
+    m1.metric("RBI Repo Rate (Policy Anchor)", f"{repo:.2f}%")
+    m2.metric("India 10Y G-Sec (Approx)", f"{gsec:.2f}%")
+    m3.metric("10Y vs. Repo Spread", f"{spread:+.2f}%")
+
+    if debt_liquid:
+        ddf = pd.DataFrame(debt_liquid)
+        display_cols = [
+            "name", "bucket", "duration_profile", "credit_profile",
+            "1W", "1M", "3M", "1Y", "3Y_CAGR", "volatility_1y", "sharpe_1y", "bi_stance"
+        ]
+        avail = [c for c in display_cols if c in ddf.columns]
+        view_df = ddf[avail].rename(columns={
+            "name": "Debt / Liquid Proxy",
+            "bucket": "Category",
+            "duration_profile": "Duration Profile",
+            "credit_profile": "Credit / Sovereign",
+            "3Y_CAGR": "3Y CAGR",
+            "volatility_1y": "Vol %",
+            "sharpe_1y": "Sharpe",
+            "bi_stance": "BI Stance",
+        })
+        st.dataframe(
+            view_df.style.format({
+                "1W": "{:+.2f}%",
+                "1M": "{:+.2f}%",
+                "3M": "{:+.2f}%",
+                "1Y": "{:+.2f}%",
+                "3Y CAGR": "{:+.2f}%",
+                "Vol %": "{:.2f}%",
+                "Sharpe": "{:.2f}",
+            }, na_rep="—"),
+            use_container_width=True,
+            hide_index=True,
+        )
+        st.caption(
+            "Apple-to-Apple Debt Note: Liquid and money-market funds prioritize capital preservation and accrual with minimal duration risk; "
+            "gilt/longer-duration funds carry higher rate/mark-to-market sensitivity when bond yields move."
+        )
+    else:
+        st.info("Click **🔄 Refresh Live Data & AI** once to load Debt & Liquid proxy metrics.")
