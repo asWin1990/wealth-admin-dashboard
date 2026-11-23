@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import yaml
 import feedparser
@@ -35,6 +36,10 @@ VALUATION_PROXIES = {
 }
 
 
+def clean_label(text):
+    return re.sub(r"\s*\([^)]*\)", "", text).strip()
+
+
 def load_config():
     with open("config.yaml", "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
@@ -57,7 +62,7 @@ def calc_pct_return(series, trading_days):
 
 
 def get_currency_symbol(name, ticker):
-    if "VIX" in name:
+    if "VIX" in name.upper():
         return ""
     if "Yield" in name or "TNX" in ticker:
         return "%"
@@ -79,59 +84,93 @@ def fetch_pe_ratio(ticker):
     return None
 
 
-def compute_bi_stance(pe, dist_200dma, r_1m, r_3m, sharpe, is_vol=False):
-    if is_vol:
-        if dist_200dma is not None and dist_200dma > 25:
-            return "Elevated Fear"
-        elif dist_200dma is not None and dist_200dma < -15:
-            return "Complacent / Low Vol"
-        return "Normal Regime"
+def compute_vol_stance(price, dist_200dma, r_1d, r_1w):
+    if r_1d is not None and r_1d >= 15:
+        return "Fear Spike Alert"
+    if dist_200dma is not None and dist_200dma > 30:
+        return "Elevated Stress"
+    if price < 14 and (r_1w is None or r_1w <= 2):
+        return "Low-Vol / Complacent"
+    return "Normal Regime"
 
-    score = 0
-    if pe is not None:
+
+def compute_bi_stance(pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, vol_1y, is_equity=True):
+    score = 0.0
+    drivers = []
+
+    # 1. Valuation (equities only)
+    if is_equity and pe is not None:
         if pe < 18:
-            score += 2
-        elif pe <= 25:
-            score += 1
-        elif pe > 32:
-            score -= 2
+            score += 1.5
+            drivers.append("Cheap P/E")
+        elif pe <= 24:
+            score += 0.75
+            drivers.append("Fair P/E")
+        elif pe <= 30:
+            score -= 0.5
+            drivers.append("Rich P/E")
         else:
-            score -= 1
+            score -= 1.5
+            drivers.append("Expensive P/E")
 
+    # 2. Trend & Drawdown Positioning
     if dist_200dma is not None:
-        if -12 <= dist_200dma <= 0 and (r_1m is not None and r_1m > 0):
-            score += 2
-        elif 0 < dist_200dma <= 12:
-            score += 1
-        elif dist_200dma > 16:
-            score -= 2
-        elif dist_200dma < -12:
-            score -= 1
+        if -12 <= dist_200dma < 0 and r_1m is not None and r_1m > 0:
+            score += 1.5
+            drivers.append("Reversing Near 200-DMA")
+        elif 0 <= dist_200dma <= 12:
+            score += 1.0
+            drivers.append("Above 200-DMA")
+        elif dist_200dma > 18:
+            score -= 1.25
+            drivers.append("Extended vs 200-DMA")
+        elif dist_200dma < -15:
+            score -= 1.0
+            drivers.append("Below 200-DMA")
 
-    if r_3m is not None:
-        if r_3m > 4:
-            score += 1
-        elif r_3m < -5:
-            score -= 1
+    if from_52w_high is not None and from_52w_high < -20 and (r_1m is None or r_1m <= 0):
+        score -= 0.75
+        drivers.append("Deep Off High")
 
+    # 3. Momentum Alignment (1M, 3M, 1Y)
+    pos_horizons = sum(1 for x in [r_1m, r_3m, r_1y] if x is not None and x > 0)
+    neg_horizons = sum(1 for x in [r_1m, r_3m, r_1y] if x is not None and x < 0)
+    if pos_horizons == 3:
+        score += 1.0
+        drivers.append("Broad Uptrend")
+    elif neg_horizons == 3:
+        score -= 1.0
+        drivers.append("Broad Downtrend")
+
+    # 4. Risk-Adjusted Efficiency (Sharpe & Volatility)
     if sharpe is not None:
-        if sharpe >= 0.8:
-            score += 1
-        elif sharpe < -0.3:
-            score -= 1
+        if sharpe >= 1.0:
+            score += 0.75
+            drivers.append("Strong Sharpe")
+        elif sharpe < -0.25:
+            score -= 0.75
+            drivers.append("Weak Sharpe")
 
-    if score >= 3:
-        return "Strong Buy"
-    elif score == 2:
-        return "Accumulate"
-    elif score in [0, 1]:
-        return "Hold / Neutral"
-    elif score == -1:
-        return "Cautious / Trim"
-    return "Avoid / Weak"
+    if vol_1y is not None and vol_1y > 28 and is_equity:
+        score -= 0.5
+        drivers.append("High Vol")
+
+    if score >= 2.5:
+        label = "Strong Buy"
+    elif score >= 1.25:
+        label = "Accumulate"
+    elif score >= -0.75:
+        label = "Hold / Neutral"
+    elif score >= -2.0:
+        label = "Cautious / Trim"
+    else:
+        label = "Avoid / Weak"
+
+    top_reasons = " + ".join(drivers[:2]) if drivers else "Balanced Signals"
+    return f"{label} ({top_reasons})"
 
 
-def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", is_vol=False):
+def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", mode="equity"):
     current_price = round(float(close.iloc[-1]), 2)
 
     r_1d = calc_pct_return(close, 1)
@@ -153,16 +192,15 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", is_
     dma_200 = float(close.tail(200).mean()) if len(close) >= 200 else None
     dist_200dma = round(((current_price / dma_200) - 1) * 100, 2) if dma_200 else None
 
-    delta = close.diff()
-    gain = delta.clip(lower=0).rolling(14).mean()
-    loss = (-delta.clip(upper=0)).rolling(14).mean()
-    rs = gain / loss.replace(0, np.nan)
-    rsi_14 = round(float(100 - (100 / (1 + rs.iloc[-1]))), 1) if len(close) >= 15 and not pd.isna(rs.iloc[-1]) else None
-
     high_52w = float(recent_1y.max())
     from_52w_high = round(((current_price / high_52w) - 1) * 100, 2) if high_52w > 0 else None
 
-    bi_stance = compute_bi_stance(pe, dist_200dma, r_1m, r_3m, sharpe, is_vol=is_vol)
+    if mode == "vol":
+        bi_stance = compute_vol_stance(current_price, dist_200dma, r_1d, r_1w)
+    else:
+        bi_stance = compute_bi_stance(
+            pe, dist_200dma, from_52w_high, r_1m, r_3m, r_1y, sharpe, ann_vol, is_equity=(mode == "equity")
+        )
 
     return {
         "name": name,
@@ -178,10 +216,9 @@ def analyze_series(name, ticker, close, rf_rate=0.068, pe=None, currency="", is_
         "5Y_CAGR": r_5y_cagr,
         "volatility_1y": ann_vol,
         "sharpe_1y": sharpe,
-        "dist_200dma": dist_200dma,
-        "rsi_14": rsi_14,
         "from_52w_high": from_52w_high,
-        "pe": None if is_vol else pe,
+        "dist_200dma": dist_200dma,
+        "pe": pe if mode == "equity" else None,
         "bi_stance": bi_stance,
     }
 
@@ -193,12 +230,20 @@ def analyze_ticker(name, ticker, category, rf_rate=0.068):
             return None, None
 
         close = hist["Close"].dropna()
-        is_vol = category == "volatility_indices"
-        is_equity = category in ["indian_equity", "indian_sectors", "global_indices"]
-        pe_ratio = fetch_pe_ratio(ticker) if is_equity else None
-        currency = get_currency_symbol(name, ticker)
+        clean_name = clean_label(name)
+        currency = get_currency_symbol(clean_name, ticker)
 
-        return analyze_series(name, ticker, close, rf_rate, pe_ratio, currency, is_vol=is_vol), close
+        if category == "volatility_indices":
+            mode = "vol"
+            pe_ratio = None
+        elif category in ["indian_equity", "indian_sectors", "global_indices"]:
+            mode = "equity"
+            pe_ratio = fetch_pe_ratio(ticker)
+        else:
+            mode = "macro"
+            pe_ratio = None
+
+        return analyze_series(clean_name, ticker, close, rf_rate, pe_ratio, currency, mode=mode), close
     except Exception as e:
         print(f"Error fetching {name} ({ticker}): {e}")
         return None, None
@@ -253,7 +298,7 @@ def run_fetch():
         if len(aligned) > 20:
             gold_inr_10g = (aligned["gold"] / 31.1034768) * aligned["fx"] * 10
             gold_inr_data = analyze_series(
-                "Gold (INR / 10g)", "GOLD_INR_10G", gold_inr_10g, rf_rate, currency="₹"
+                "Gold INR / 10g", "GOLD_INR_10G", gold_inr_10g, rf_rate, currency="₹", mode="macro"
             )
             snapshot["markets"].setdefault("macro_commodities_fx", []).insert(0, gold_inr_data)
 
